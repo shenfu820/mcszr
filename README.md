@@ -3,7 +3,12 @@
 > 板材检测项目比赛演示用的数字人：**离线听懂人说话 → 按剧本接住上一句 → 真把 GPU 调起来干活 → 身边五块实屏**。
 > 台词逐字取自 `261111脚本（+虚拟同事+erp）(1).docx`（2026-11-13 版），能力接的是**真实项目数据**，不是演的。
 
-**仓库**：<https://gitee.com/shenfu1314/mcszr> · **换机器怎么跑**：[docs/部署与运行.md](docs/部署与运行.md)
+**仓库**：
+- Gitee <https://gitee.com/shenfu1314/mcszr>（`origin`，HTTPS）
+- GitHub <https://github.com/shenfu820/mcszr>（`github`，**SSH over 443**——这台机器直连 github.com:443 会被重置，走 ssh.github.com:443 才通）
+
+两个远端同一个 master，提交完双击 `推送到两个仓库.bat` 一次推完。
+换机器怎么跑：**[docs/部署与运行.md](docs/部署与运行.md)**
 
 ```bat
 启动数字人_语音版.bat     :: 建软链 → 起语音识别(8773) → 起主服务(8772) → 开小星五屏窗口

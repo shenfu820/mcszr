@@ -1,23 +1,28 @@
 {
   "package": "板材数字人_四屏舞台_20261113",
-  "files": 74,
-  "total_bytes": 58089204,
+  "files": 82,
+  "total_bytes": 82012281,
   "note": "本表为本包内文件的实测尺寸与 SHA256；人物素材的复制来源见 01_人物素材_复用/来源与SHA256.json",
   "items": [
     {
       "path": "00_先读我.txt",
-      "bytes": 4094,
-      "sha256": "04bf6c31a1bca9e86c634d718452193121b731b116ef0eb03143629701e8b5a6"
+      "bytes": 4152,
+      "sha256": "776c717b0b50a8903f32a8bfc34228fec138f3443996cef5ed707c9a90020b96"
     },
     {
       "path": "README.md",
-      "bytes": 14668,
-      "sha256": "933a5de9da852b5a49d693f155eab439d9deb14433cf69ede31be99f1cb9ad08"
+      "bytes": 14988,
+      "sha256": "2c47b8420912389d58a9928471700aa47d7c5827b68fba51d05f83cca6690955"
     },
     {
       "path": "xiaoxing.html",
       "bytes": 14457,
       "sha256": "7d04b97164dad38d6ea16f10b684630218ee30766d1d0984feaa0f74c7ac9c84"
+    },
+    {
+      "path": "xiaoxing5.html",
+      "bytes": 29493,
+      "sha256": "51a872caa1b556254800b2e07bfefe8b58a15aa30e9b36630bdb5131944c8711"
     },
     {
       "path": "01_人物素材_复用/pose_still_rgba.png",
@@ -65,9 +70,19 @@
       "sha256": "09411af9bccc8f1a87b3e60bb3ff80613f752831646e381f3b2513c3a60a0c14"
     },
     {
+      "path": "01_人物素材_复用/H3/talk_rgb_alpha_work.mp4",
+      "bytes": 9702232,
+      "sha256": "88313f48d2ca862066dac1b1da0464892c6ec9ad9a4a48e61daad482327a2402"
+    },
+    {
+      "path": "01_人物素材_复用/H3/talk_rgb_alpha_works.mp4",
+      "bytes": 9395794,
+      "sha256": "e7205c5dc047e038fc268e3dcd66517f5a5053c3c31e5f45bfb5b0ea0bb411ad"
+    },
+    {
       "path": "02_四屏舞台/index.html",
-      "bytes": 2428,
-      "sha256": "62a8aeb10140ebed67b18d520e85ba09ef8344e88ce2aec4fc077875012d40cb"
+      "bytes": 2493,
+      "sha256": "a3215d8d6cfe75c8c286b54f9dac6582040206ec5b09ee5b309f960a5758e270"
     },
     {
       "path": "02_四屏舞台/assets/detected_preview.jpg",
@@ -111,38 +126,43 @@
     },
     {
       "path": "02_四屏舞台/css/stage.css",
-      "bytes": 14839,
-      "sha256": "3288d11dd122652098a7814642bb69b4579692e12be46d37f04c5787ba429a84"
+      "bytes": 15169,
+      "sha256": "b70aa8c7dc4648bf6e969279f67e559dd3aaf9423e75a59112a7496bae35eaf0"
     },
     {
       "path": "02_四屏舞台/js/character.js",
-      "bytes": 14869,
-      "sha256": "5685f225fe7e82468a6721870b190acd1078022e5862488af95964d5d0bf6dd5"
+      "bytes": 15235,
+      "sha256": "805b1b67d5b24f21c02a800a94cee999f32c64caff966c01133b347f826e05ae"
     },
     {
       "path": "02_四屏舞台/js/panels.js",
-      "bytes": 10362,
-      "sha256": "7aca2943ed6499e55f7f8384478f984ab41a61be4969d890b61f4a8cc5482239"
+      "bytes": 10602,
+      "sha256": "41e6fa9488aa967d618bf50ac064a24c25b9053009fff38dec8c1f45ddb010e4"
     },
     {
       "path": "02_四屏舞台/js/stage.js",
-      "bytes": 19262,
-      "sha256": "7101f37a3eaab5341feb69f3bf6452d059f05f92dc3c82512cd75f26f17a7cd9"
+      "bytes": 20135,
+      "sha256": "a11a2e7fd38fe7d5f5d26eb00c3b3c60fabdb41284fb258fae63977f3e4054c0"
     },
     {
       "path": "03_数据/build_snapshot.py",
-      "bytes": 23874,
-      "sha256": "a54b4b7d916618f6b0228e35bd1e5ef0b9ff002a7318484109a9e3c132cc9e81"
+      "bytes": 24363,
+      "sha256": "6f6dbb3453d5acfa2fde2ba4578574d3c57f5d4a7b27a3d2e793e175a725381b"
     },
     {
       "path": "03_数据/inpaint_batch.py",
-      "bytes": 8507,
-      "sha256": "1d9c952a80e27cc41b8b944411476db774aae65d5c8495ad1192ba8abf227e82"
+      "bytes": 8689,
+      "sha256": "248c12fed217c00392c8a2bd12d437bce323092ca4ddb2e5461163cb49ba52ac"
     },
     {
       "path": "03_数据/inpaint_batch_idle.json",
       "bytes": 401,
       "sha256": "0c24a5859c4c68da72bb54265ebf5bd5e1573005da893c3821123a58750d4c8e"
+    },
+    {
+      "path": "03_数据/inpaint_batch_talk.json",
+      "bytes": 402,
+      "sha256": "7dac6726a47427fad33d66f5858181633f0bd9ec3cdeec7cd1322dc40374304a"
     },
     {
       "path": "03_数据/inpaint_meta.json",
@@ -151,18 +171,18 @@
     },
     {
       "path": "03_数据/inpaint_outfit.py",
-      "bytes": 6228,
-      "sha256": "d4a3ed6a3bb6e80064523419c637d64ef9c7db45a054c1af59a13a3cb0cabc1b"
+      "bytes": 6374,
+      "sha256": "f8bfa8beccae94b0712ecf03a410f0d6a7ebc234041fcd096e7cb0fcf54b09e0"
     },
     {
       "path": "03_数据/inpaint_refine.py",
-      "bytes": 6766,
-      "sha256": "9dcd25d8d1cea32dc2229737a0db81149f00d1b3c6d8d6e9667df896fdeecaec"
+      "bytes": 6923,
+      "sha256": "163332b8ea1ecc8992e29ee17b48fcad53d4f4eb37720a3b26a9899323d3c521"
     },
     {
       "path": "03_数据/make_manifest.py",
-      "bytes": 1709,
-      "sha256": "f84fd6b4b34cbf4334f978a5e22f213f6cf2b713e85226c716df52f1ca1977bd"
+      "bytes": 1764,
+      "sha256": "a92282b162007ab4e76fde5b741e48d59121271a9c2764f8aa3486d68185731a"
     },
     {
       "path": "03_数据/outfit.json",
@@ -171,28 +191,28 @@
     },
     {
       "path": "03_数据/prepare_assets.py",
-      "bytes": 3506,
-      "sha256": "9002ac2937fed14802e2d4f469e6653b72daa7330d3ead3aeb1993c539bf6b95"
+      "bytes": 3594,
+      "sha256": "9f7709ad9eeee492cfc119ae8b4c6b2060cb9fd9fd2ddaf91066abf50380453a"
     },
     {
       "path": "03_数据/prepare_garment_fit.py",
-      "bytes": 10277,
-      "sha256": "0ef9c0f123cb7ccf5a52829e68db6a08c53dc315ff4022ca11ad01ab45e04edb"
+      "bytes": 10515,
+      "sha256": "e04e00cdb237a766c2e0b0e95d652d6bebe470c01d992b796b24d517cd3cafd7"
     },
     {
       "path": "03_数据/prepare_garment_plate.py",
-      "bytes": 8992,
-      "sha256": "b129261659823d0fa6371adfc3fab333fd649d7004fe22338942b1c7d44affff"
+      "bytes": 9201,
+      "sha256": "a8e0ae0e89382da88a2c20540c64189780cb81afbb81398dc0ba48677b9d3811"
     },
     {
       "path": "03_数据/prepare_outfit.py",
-      "bytes": 4899,
-      "sha256": "177321736011c20b2bc61d006c85c4a7e598525bada649b7aad97599e867fb5f"
+      "bytes": 5018,
+      "sha256": "948d6de18592db3125bfa35630b79881a5bae15aba0b12b957b7bae017bdd3a1"
     },
     {
       "path": "03_数据/shot_stage.mjs",
-      "bytes": 4611,
-      "sha256": "0a075c2025e12599a9897e82c57d994ffe462015579b7e60ddeb91b4f5c124a0"
+      "bytes": 4734,
+      "sha256": "d31879b842642fa9a90afe1ccbbf8af201f1a1a7865c153fb5696b2137da862f"
     },
     {
       "path": "03_数据/smooth_idle.json",
@@ -200,9 +220,14 @@
       "sha256": "3f7215db3b82f252c534b031a5ecbbbb35d7f2030b2280d5979eccd13dc489cd"
     },
     {
+      "path": "03_数据/smooth_talk.json",
+      "bytes": 258,
+      "sha256": "c2429ff176f28f1497c288c21e3e9e7b05ca4a74886994aea3f6118036280018"
+    },
+    {
       "path": "03_数据/smooth_video.py",
-      "bytes": 4219,
-      "sha256": "2dea599a927134cca46eeca54bd00dc00feee70733775d7eba97175629620111"
+      "bytes": 4324,
+      "sha256": "3e634d4cbdc237806b0015507648f5ac6e1bc9dc5eaca90a7f9b95f00dad2aac"
     },
     {
       "path": "03_数据/snapshot.js",
@@ -216,8 +241,8 @@
     },
     {
       "path": "04_台词配音/make_voice.py",
-      "bytes": 1751,
-      "sha256": "ec69433c919949df3af747d11885723dfe76837aeeaea3f73ae30ee7a10c7911"
+      "bytes": 1806,
+      "sha256": "72a5ab3f2d5fd11f23af70ac5508363f28b6f39856428af2d613f52c289684fa"
     },
     {
       "path": "04_台词配音/script.js",
@@ -261,13 +286,13 @@
     },
     {
       "path": "05_服务/stage_server.py",
-      "bytes": 9971,
-      "sha256": "3f89d020cf82afd521bd8ecfe01f8bfd64ae9e84e6da624a94223bc510b6fb5b"
+      "bytes": 10229,
+      "sha256": "5d3be52fafcd3a7f644115f64f8c4168fb3b29b31836e1bc98217e2835c9e345"
     },
     {
       "path": "05_服务/wincap.py",
-      "bytes": 6983,
-      "sha256": "e9149b4340d17d5edc926ec4398aad267c4aad4d7811d2762cf65044790123df"
+      "bytes": 7173,
+      "sha256": "3b09802cebcadbf164605e8ce09c7f5d10f577934db8c8ce1f54d19a57eddecf"
     },
     {
       "path": "05_服务/停止四屏.bat",
@@ -373,6 +398,21 @@
       "path": "06_验收截图/19_批处理抽样帧_方向已修正.png",
       "bytes": 226087,
       "sha256": "90b12a660edfaa625a54d351f743c0e37ca89ae028c2ed049abcc1d605196ae1"
+    },
+    {
+      "path": "06_验收截图/20_待机序列_平滑后四帧.png",
+      "bytes": 339927,
+      "sha256": "fe28d2212792fa169adc27495ce0aff73005b06026201c2b4b9fb4580bb615ca"
+    },
+    {
+      "path": "06_验收截图/21_真换装_全景.png",
+      "bytes": 4035700,
+      "sha256": "8a0475ddd65ba9e4d38cb911031b0a0be2da843f05798cb39061c59db6d7b1d6"
+    },
+    {
+      "path": "06_验收截图/22_真换装_人物特写.png",
+      "bytes": 414605,
+      "sha256": "4f3619d426de315d15861e9d3753e24826097b9ed79a864cf2c19e79b4211b35"
     }
   ]
 }

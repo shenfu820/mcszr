@@ -123,9 +123,9 @@
 | 1 | `03_数据/prepare_garment_plate.py` | 商品图抠白底、切掉裤子与文字、估藏青/灰色 |
 | 2 | `03_数据/prepare_garment_fit.py` | 用**整个人形轮廓**逐行把夹克贴上去，出 `assets/jacket_fit.png`（照片版）与 `jacket_maps.png`（版型图） |
 | 3 | `03_数据/inpaint_batch.py` | 合成 + **SD1.5 inpainting 重绘**（strength 0.58、36 步、固定 seed、遮罩含脖子一圈让 SD 自己长领子）→ `H3/<name>_rgb_alpha_work.mp4` |
-| 4 | `03_数据/smooth_video.py` | 衣服区一阶 EMA 时间平滑（α=0.65），压帧间闪烁 → `H3/<name>_rgb_alpha_works.mp4` |
+| 4 | `03_数据/smooth_video.py` | 衣服区一阶 EMA 时间平滑（α=0.65），压帧间闪烁 → `H3/<name>_rgb_alpha_works.mp4`（舞台优先用这个） |
 
-实测：idle 124 帧，衣服区相邻帧平均绝对差 **5.17 → 3.50（↓32%）**。
+实测：idle 124 帧 衣服区相邻帧平均绝对差 **5.17 → 3.50（↓32%）**；talk 588 帧 **3.54 → 2.36（↓33%）**。
 模型：`AI-ModelScope/stable-diffusion-inpainting`（ModelScope，fp16，落 `~/.cache/modelscope`）；
 依赖装在独立 venv `数字人\.venv-sd`（`--system-site-packages` 复用产线 torch，不污染 `yoloces` 环境）。
 
