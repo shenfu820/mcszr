@@ -1,0 +1,43 @@
+{
+  "note": "人物素材复用：源为「小星数字人_建模与制作素材_20261113/01_现用人物素材」，本包只复制，不改源包；视频为 1536×1344（左半 RGB / 右半灰度 Alpha），人物实际画幅 768×1344。",
+  "generated_at": "2026-11-13 12:13:24",
+  "items": [
+    {
+      "name": "H3/idle_rgb_alpha.mp4",
+      "src": "C:\\Users\\Administrator\\Desktop\\数字人\\小星数字人_建模与制作素材_20261113\\01_现用人物素材\\H3\\idle_rgb_alpha.mp4",
+      "bytes": 2342398,
+      "sha256_src": "bc75aeef245d6a57c2ed3404b1de8661a735656bf4a315bd46420b22a1963fb6",
+      "sha256_dst": "bc75aeef245d6a57c2ed3404b1de8661a735656bf4a315bd46420b22a1963fb6"
+    },
+    {
+      "name": "H3/talk_rgb_alpha.mp4",
+      "src": "C:\\Users\\Administrator\\Desktop\\数字人\\小星数字人_建模与制作素材_20261113\\01_现用人物素材\\H3\\talk_rgb_alpha.mp4",
+      "bytes": 7200830,
+      "sha256_src": "09411af9bccc8f1a87b3e60bb3ff80613f752831646e381f3b2513c3a60a0c14",
+      "sha256_dst": "09411af9bccc8f1a87b3e60bb3ff80613f752831646e381f3b2513c3a60a0c14"
+    },
+    {
+      "name": "H3/plate.json",
+      "src": "C:\\Users\\Administrator\\Desktop\\数字人\\小星数字人_建模与制作素材_20261113\\01_现用人物素材\\H3\\plate.json",
+      "bytes": 212,
+      "sha256_src": "7ed0092f6e1b3a2c03d61cd5357a38c0959f39ed8bad3b56f1bd697922744ed4",
+      "sha256_dst": "7ed0092f6e1b3a2c03d61cd5357a38c0959f39ed8bad3b56f1bd697922744ed4"
+    },
+    {
+      "name": "现用形象定妆图_anchor_J.png",
+      "src": "C:\\Users\\Administrator\\Desktop\\数字人\\小星数字人_建模与制作素材_20261113\\01_现用人物素材\\现用形象定妆图_anchor_J.png",
+      "bytes": 426846,
+      "sha256_src": "009c9c02d3c7d2ef4f8e3eb5af48571d178846830ea378f66542e1910f9f193a",
+      "sha256_dst": "009c9c02d3c7d2ef4f8e3eb5af48571d178846830ea378f66542e1910f9f193a"
+    },
+    {
+      "name": "pose_still_rgba.png",
+      "src": "idle_rgb_alpha.mp4 首帧 + 右半 Alpha 合成",
+      "bytes": 413235,
+      "size": [
+        768,
+        1344
+      ]
+    }
+  ]
+}

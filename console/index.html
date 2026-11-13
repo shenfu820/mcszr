@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>控制台 · 小星</title>
+<style>
+  :root{--bg:#0a1017;--panel:#111b25;--line:#22303f;--txt:#e6f0f8;--dim:#7d93a8;
+        --g:#3ddc97;--b:#39b6ff;--r:#ff6b6b;--y:#ffc857;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei UI",system-ui,sans-serif;
+       height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#12202c,#0d1720);}
+  h1{font-size:16px;letter-spacing:1.5px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);box-shadow:0 0 9px currentColor;}
+  .pill{font-size:11px;padding:3px 10px;border-radius:999px;background:#16232f;
+        border:1px solid var(--line);color:var(--dim);}
+  .pill b{color:var(--txt);}
+  header .right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  button{font-family:inherit;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;
+         background:#1b2a38;color:#d6e8f7;border:1px solid var(--line);transition:.15s;}
+  button:hover{background:#24384a;border-color:#365068;}
+  button.primary{background:linear-gradient(180deg,#2f9e6f,#227a55);border-color:#3ddc97;color:#eafff5;}
+  button.warn{background:#3a1b1b;border-color:#7a2f2f;color:#ffc9c9;}
+  main{flex:1;display:grid;grid-template-columns:minmax(420px,1fr) minmax(380px,.9fr);gap:0;overflow:hidden;}
+  .col{overflow-y:auto;padding:14px 16px;}
+  .col:first-child{border-right:1px solid var(--line);}
+  .scene{margin-bottom:14px;}
+  .scene h3{font-size:11px;color:var(--dim);letter-spacing:1.2px;font-weight:600;margin-bottom:7px;
+            text-transform:uppercase;}
+  .cue{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:10px;
+       background:var(--panel);border:1px solid var(--line);margin-bottom:7px;cursor:pointer;transition:.13s;}
+  .cue:hover{border-color:#365068;background:#16222e;transform:translateX(2px);}
+  .cue.active{border-color:var(--g);box-shadow:0 0 0 1px rgba(61,220,151,.35) inset;}
+  .cue .no{font-size:11px;color:var(--dim);min-width:22px;font-variant-numeric:tabular-nums;padding-top:2px;}
+  .cue .body{flex:1;}
+  .cue .t{font-size:13px;line-height:1.5;}
+  .cue .meta{font-size:10.5px;color:var(--dim);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;}
+  .cue .flag{color:var(--g);}
+  .cue .flag.novoice{color:var(--y);}
+  .chat{display:flex;flex-direction:column;height:100%;}
+  .log{flex:1;overflow-y:auto;padding-right:4px;}
+  .msg{margin-bottom:11px;font-size:13px;line-height:1.6;}
+  .msg .who{font-size:10.5px;letter-spacing:1px;font-weight:700;margin-bottom:3px;}
+  .msg.me .who{color:var(--b);}
+  .msg.dh .who{color:var(--g);}
+  .msg .txt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+            white-space:pre-wrap;word-break:break-word;}
+  .msg.dh .txt{border-color:#264d3c;}
+  .steps{margin-top:6px;font-size:11px;color:var(--dim);font-family:Consolas,monospace;}
+  .steps div{padding:2px 0;}
+  .steps .ok{color:var(--g);}
+  .steps .bad{color:var(--r);}
+  .inputbar{display:flex;gap:8px;margin-top:10px;}
+  .inputbar input{flex:1;background:#0d161e;border:1px solid var(--line);border-radius:9px;
+                  padding:10px 12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none;}
+  .inputbar input:focus{border-color:var(--b);}
+  .alertbar{display:none;padding:9px 18px;background:rgba(200,40,40,.92);font-size:12.5px;font-weight:700;}
+  .alertbar.on{display:block;}
+  .hint{font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;}
+  kbd{background:#1b2a38;border:1px solid #2c4152;border-radius:4px;padding:1px 5px;font-size:10px;}
+  .lvl{width:58px;height:8px;border-radius:4px;background:#16232f;border:1px solid var(--line);
+       overflow:hidden;display:inline-block;vertical-align:middle;}
+  .lvl>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3ddc97,#ffc857);transition:width .08s;}
+  .lvl.hot>i{background:linear-gradient(90deg,#3ddc97,#39b6ff);}
+  #btnMic.live{background:linear-gradient(180deg,#2f9e6f,#1d6b4a);border-color:#3ddc97;}
+  #btnListen.off{color:var(--dim);}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>小星控制台</h1>
+  <span class="pill">小星 · AI编程助手/智能运维</span>
+  <span class="pill" id="pSrv">服务 <b>-</b></span>
+  <span class="pill" id="pSub">订阅 <b>-</b></span>
+  <span class="pill" id="pHl">模型 <b>-</b></span>
+  <span class="pill" id="pGpu">GPU <b>-</b></span>
+  <span class="pill" id="pMic"><span class="lvl" id="lvlbox"><i id="lvl"></i></span> <b id="micState">麦克风 未激活</b></span>
+  <div class="right">
+    <button id="btnMic" class="primary">🎤 按住说话</button>
+    <button id="btnListen" class="primary">常听: 开</button>
+    <button id="btnNext">下一个 cue ␣</button>
+    <button id="btnHealth">查模型性能</button>
+    <button id="btnAlarm" class="warn">报警演示</button>
+    <button id="btnVoice">静音</button>
+  </div>
+</header>
+<div class="alertbar" id="alertbar"></div>
+
+<main>
+  <div class="col" id="cueList"></div>
+  <div class="col">
+    <div class="chat">
+      <div class="log" id="log"></div>
+      <div class="inputbar">
+        <input id="msg" placeholder="给数字人下指令，如：起草数据预处理代码 / 今天检了多少 / 看看模型性能"/>
+        <button class="primary" id="btnSend">发送</button>
+      </div>
+      <div class="hint">
+        提示：<kbd>空格</kbd> 推进下一个 cue；点左侧任一条可直接重播。
+        带 <span style="color:var(--g)">✓语音</span> 的 cue 会出声，其余只显示字幕。
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let CUES = [], CURRENT = "", VOICE_ON = true, LAST_ALERT = false;
+
+const post = async (p, body) => {
+  const r = await fetch(p, {method:'POST', headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify(body||{})});
+  return r.json();
+};
+const get = async (p) => (await fetch(p)).json();
+
+// ── 剧本列表
+async function loadScript(){
+  const d = await get('/api/script');
+  CUES = d.cues || [];
+  const byScene = {};
+  CUES.forEach(c => (byScene[c.scene] = byScene[c.scene] || []).push(c));
+  const el = $('#cueList');
+  el.innerHTML = '';
+  let n = 0;
+  for (const [scene, list] of Object.entries(byScene)){
+    const box = document.createElement('div');
+    box.className = 'scene';
+    box.innerHTML = `<h3>${scene}</h3>`;
+    list.forEach(c => {
+      n++;
+      const d = document.createElement('div');
+      d.className = 'cue';
+      d.dataset.id = c.id;
+      d.innerHTML = `
+        <div class="no">${n}</div>
+        <div class="body">
+          <div class="t">${c.text}</div>
+          <div class="meta">
+            <span class="flag ${c.has_voice?'':'novoice'}">${c.has_voice?'✓语音':'无语音'}</span>
+            <span>${c.who}</span>
+            ${c.agent?`<span style="color:var(--y)">⚙ ${c.agent}</span>`:''}
+            <span style="opacity:.7">${c.trigger||''}</span>
+          </div>
+        </div>`;
+      d.onclick = () => playCue(c.id);
+      box.appendChild(d);
+    });
+    el.appendChild(box);
+  }
+}
+
+async function playCue(id){
+  CURRENT = id;
+  document.querySelectorAll('.cue').forEach(e =>
+    e.classList.toggle('active', e.dataset.id === id));
+  await post('/api/cue', {id});
+}
+
+async function nextCue(){
+  const r = await post('/api/cue/next', {current: CURRENT});
+  if (r.done){ addMsg('dh', '剧本已走到最后一条。'); return; }
+  CURRENT = r.sent.id;
+  document.querySelectorAll('.cue').forEach(e =>
+    e.classList.toggle('active', e.dataset.id === CURRENT));
+  (document.querySelector(`.cue[data-id="${CURRENT}"]`)||{}).scrollIntoView?.({block:'center', behavior:'smooth'});
+}
+
+// ── 对话
+function addMsg(who, text, steps){
+  const box = document.createElement('div');
+  box.className = 'msg ' + (who === 'me' ? 'me' : 'dh');
+  let tpl = `<div class="who">${who === 'me' ? '同事' : '小星'}</div><div class="txt"></div>`;
+  if (steps && steps.length){
+    tpl += '<div class="steps">' + steps.map(s =>
+      `<div class="${s.ok?'ok':'bad'}">→ ${s.tool || ''} ${s.brief || ''}</div>`).join('') + '</div>';
+  }
+  box.innerHTML = tpl;
+  box.querySelector('.txt').textContent = text;
+  $('#log').appendChild(box);
+  $('#log').scrollTop = $('#log').scrollHeight;
+}
+
+async function send(){
+  const el = $('#msg');
+  const text = el.value.trim();
+  if (!text) return;
+  el.value = '';
+  addMsg('me', text);
+  try {
+    const r = await post('/api/agent/chat', {message: text});
+    const d = r.data || {};
+    addMsg('dh', d.say || '(没有回复)', d.steps);
+  } catch (e) {
+    addMsg('dh', '接口异常：' + e.message);
+  }
+}
+
+// ── 状态
+async function refreshStatus(){
+  try {
+    const h = await get('/api/health');
+    $('#pSrv').innerHTML = `服务 <b>v${h.version}</b>`;
+    $('#pSub').innerHTML = `订阅 <b>${h.subscribers}</b>`;
+    const s = await get('/api/state');
+    const hl = s.health;
+    if (hl){
+      const c = hl.confidence || {};
+      $('#pHl').innerHTML = `模型 <b style="color:${hl.degraded?'var(--r)':'var(--g)'}">${
+        hl.degraded ? '异常' : '正常'}</b> 置信度 ${c.recent ?? '-'}`;
+      if (hl.degraded && !LAST_ALERT){
+        LAST_ALERT = true;
+        $('#alertbar').classList.add('on');
+        $('#alertbar').textContent = '⚠ ' + (hl.reasons || []).join(' / ');
+      } else if (!hl.degraded){
+        LAST_ALERT = false;
+        $('#alertbar').classList.remove('on');
+      }
+      $('#dot').style.background = hl.degraded ? 'var(--r)' : 'var(--g)';
+      $('#dot').style.color = hl.degraded ? 'var(--r)' : 'var(--g)';
+    }
+  } catch (e) { /* 服务还没起 */ }
+}
+
+// ── GPU 作业状态（真作业，跑完自己停）
+async function refreshGpu(){
+  try {
+    const r = await get('/api/ops');
+    const d = r.data || {};
+    const g = d.gpu || {}, j = d.job || {};
+    const color = j.state === 'running' ? 'var(--y)' : (g.util > 20 ? 'var(--y)' : 'var(--g)');
+    const jt = j.state === 'running'
+      ? `${j.label} ${j.epoch || '起'}/${j.epochs || ''}`
+      : (j.state === 'done' ? `${j.label} 已完成` : (j.state === 'failed' ? `${j.label} 失败` : '空闲'));
+    $('#pGpu').innerHTML = `GPU <b style="color:${color}">${g.util ?? 0}%</b> ${g.mem_used ?? 0}MB · ${jt}`;
+    if (j.state === 'running' && !window.__jobAlerted){
+      window.__jobAlerted = true;
+    }
+    if (j.state !== 'running') window.__jobAlerted = false;
+  } catch (e) {}
+}
+
+// ══════════════════════════════ 语音：常开监听 → 16k WAV → /api/voice
+// 设计要点（都是踩过的坑）：
+//  1) 一次授权，之后一直听：VAD 断句 → 送识别 → 等回答播完 → 自己接着听，不需要再点。
+//  2) 它自己在说话时（PLAYING）既不吃音频也不判端点，否则会把自己的回答录进去。
+//  3) 阈值自适应：先学环境底噪（floor），再取 floor*2.2，车间噪音下不会一直误触发。
+//  4) 每句最多 15 秒，超了强制切，避免一说话就把内存撑爆。
+const MIC = {
+  ctx:null, stream:null, node:null, src:null, sr:0,
+  active:false, manual:false, buf:[], voiced:0, speech:0,
+  speaking:false, silent:0, rms:0, floor:0.008,
+  sending:false, playing:false, armedOnce:false, errShown:false
+};
+let ALWAYS = true;
+
+function micSay(msg, cls){
+  $('#micState').textContent = msg;
+  $('#pMic').style.borderColor = cls === 'live' ? '#264d3c'
+                                 : cls === 'bad' ? '#5a2a2a' : 'var(--line)';
+  $('#micState').style.color = cls === 'live' ? 'var(--g)' : cls === 'bad' ? 'var(--r)' : 'var(--dim)';
+}
+
+function updateLvl(rms){
+  const pct = Math.min(100, Math.round(rms * 900));
+  $('#lvl').style.width = pct + '%';
+  $('#lvlbox').classList.toggle('hot', rms > Math.max(0.010, MIC.floor * 2.2));
+}
+
+async function ensureCtx(){
+  if (MIC.ctx) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    micSay('这个浏览器不给麦克风', 'bad'); return false;
+  }
+  try {
+    MIC.stream = await navigator.mediaDevices.getUserMedia({
+      audio:{channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true}
+    });
+  } catch (e) {
+    micSay('麦克风被拒/占用', 'bad');
+    if (!MIC.errShown){ MIC.errShown = true;
+      addMsg('dh', '麦克风打不开（' + e.name + '）。检查：① 地址栏左侧的麦克风权限；② 有没有别的程序占着麦克风。'); }
+    return false;
+  }
+  MIC.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  MIC.sr = MIC.ctx.sampleRate;
+  const src = MIC.ctx.createMediaStreamSource(MIC.stream);
+  MIC.node = MIC.ctx.createScriptProcessor(4096, 1, 1);
+  MIC.node.onaudioprocess = onAudio;
+  src.connect(MIC.node);
+  MIC.node.connect(MIC.ctx.destination);
+  return true;
+}
+
+function onAudio(e){
+  const d = e.inputBuffer.getChannelData(0);
+  let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i];
+  const rms = Math.sqrt(s / d.length);
+  MIC.rms = rms;
+  updateLvl(rms);
+
+  // 它自己在说话、或者正在等回答：这期间的声音一律不采
+  if (MIC.sending || MIC.playing) return;
+  if (!MIC.active) return;
+
+  if (!MIC.speaking) MIC.floor = MIC.floor * 0.95 + rms * 0.05;   // 学底噪
+  const TH = Math.max(0.010, MIC.floor * 2.2);
+
+  if (!MIC.speaking){
+    if (rms > TH && !MIC.manual){          // 常听模式：自动起句
+      MIC.speaking = true; MIC.silent = 0; MIC.voiced = 0;
+      micSay('听到你在说…', 'live');
+    } else if (MIC.manual){                // 按住说话：整段都收
+      MIC.speaking = true;
+    } else {
+      return;                              // 没在说话就别攒内存
+    }
+  }
+
+  MIC.buf.push(new Float32Array(d));
+  MIC.voiced += d.length / MIC.sr;
+  if (rms > TH) MIC.speech += d.length / MIC.sr;
+
+  if (MIC.manual) return;                  // 手动模式由松手触发结束
+
+  if (rms > TH){ MIC.silent = 0; }
+  else {
+    MIC.silent += d.length / MIC.sr;
+    if (MIC.silent > 0.8) return endUtterance('停顿');
+  }
+  if (MIC.voiced > 15) return endUtterance('超长');
+}
+
+function wav16(chunks, sr){
+  let n = 0; chunks.forEach(c => n += c.length);
+  const flat = new Float32Array(n); let o = 0;
+  chunks.forEach(c => { flat.set(c, o); o += c.length; });
+  const target = 16000, ratio = sr / target;
+  const m = Math.floor(n / ratio);
+  const out = new Int16Array(m);
+  for (let i = 0; i < m; i++){
+    const x = i * ratio, i0 = Math.floor(x), i1 = Math.min(n-1, i0+1);
+    const v = flat[i0] + (flat[i1] - flat[i0]) * (x - i0);
+    out[i] = Math.max(-32768, Math.min(32767, v * 32767));
+  }
+  const buf = new ArrayBuffer(44 + out.length * 2);
+  const dv = new DataView(buf);
+  const ws = (p, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(p+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4, 36 + out.length*2, true); ws(8,'WAVE');
+  ws(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,target,true); dv.setUint32(28,target*2,true); dv.setUint16(32,2,true);
+  dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40, out.length*2, true);
+  new Int16Array(buf, 44).set(out);
+  return buf;
+}
+
+// 采集开关
+function captureOn(){
+  if (MIC.active) return;
+  MIC.active = true; MIC.speaking = false; MIC.silent = 0; MIC.voiced = 0; MIC.speech = 0; MIC.buf = [];
+  micSay(ALWAYS ? '常听中 · 直接说' : '已就绪', 'live');
+  $('#btnMic').classList.add('live');
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+}
+function captureOff(reason){
+  MIC.active = false; MIC.speaking = false;
+  $('#btnMic').classList.remove('live');
+  if (reason) micSay(reason, '');
+}
+
+async function arm(){
+  if (!(await ensureCtx())) return;
+  MIC.armedOnce = true;
+  $('#btnListen').textContent = '常听: ' + (ALWAYS ? '开' : '关');
+  $('#btnListen').classList.toggle('primary', ALWAYS);
+  $('#btnListen').classList.toggle('off', !ALWAYS);
+  if (ALWAYS) captureOn();
+}
+
+// 一句话说完 → 送识别 → 等回答播完 → 接着听
+async function endUtterance(why){
+  const chunks = MIC.buf; MIC.buf = [];
+  const speech = MIC.speech;
+  MIC.voiced = 0; MIC.speech = 0; MIC.speaking = false; MIC.silent = 0;
+  captureOff('处理中…');
+  if (speech < 0.5 || !chunks.length){
+    if (ALWAYS) captureOn();
+    return;
+  }
+  MIC.sending = true;
+  addMsg('me', '（语音）识别中…');
+  let audioUrl = '';
+  try {
+    const r = await fetch('/api/voice', {
+      method:'POST', headers:{'Content-Type':'application/octet-stream'}, body: wav16(chunks, MIC.sr)
+    });
+    const j = await r.json();
+    const last = $('#log').lastElementChild;
+    if (j.ok && j.silent){
+      if (last) last.remove();      // 听不清就当作没发生，不留噪声消息
+      return;
+    }
+    if (j.ok){
+      if (last) last.querySelector('.txt').textContent = '（语音）' + (j.heard || '没听到内容');
+      const d = j.data || {};
+      addMsg('dh', d.say || j.say || '(没有回复)', d.steps);
+      if (d.job && d.job.state) showJob(d.job);
+      audioUrl = j.audio || '';
+    } else {
+      if (last) last.querySelector('.txt').textContent = '（语音失败）' + (j.error || '');
+      addMsg('dh', '语音这条路没通：' + (j.error || '未知错误'));
+    }
+  } catch (e) {
+    addMsg('dh', '语音接口异常：' + e.message);
+  }
+  MIC.sending = false;
+
+  // 等它把这句回话放完再继续听，否则会把自己的声音当成同事说话
+  if (ALWAYS && audioUrl){
+    MIC.playing = true;
+    micSay('我在说，先别打断…', '');
+    await waitAudio(audioUrl);
+    MIC.playing = false;
+  }
+  if (ALWAYS){ MIC.floor = Math.max(0.006, MIC.floor); captureOn(); }
+  refreshGpu();
+}
+
+function waitAudio(url){
+  return new Promise(res => {
+    const a = new Audio(url);
+    a.preload = 'metadata';
+    let done = false;
+    const fin = () => { if (done) return; done = true; res(); };
+    a.onloadedmetadata = () => {
+      const sec = isFinite(a.duration) ? a.duration : 1.6;
+      setTimeout(fin, sec * 1000 + 350);
+    };
+    a.onerror = () => setTimeout(fin, 1400);
+    setTimeout(fin, 9000);       // 兜底：再长也不超过 9 秒
+  });
+}
+
+function showJob(job){
+  const p = job.params || {};
+  addMsg('dh', `作业 ${job.label || job.mode} 已起：${job.state}，日志 ${job.workdir || ''}`,
+         [{tool:'start_gpu_job', ok:job.state!=='failed', brief:`${job.mode} ${p.epochs?p.epochs+'轮':''}`}]);
+}
+
+// ── 按住说话（手动优先，随时可用）
+const micBtn = $('#btnMic');
+async function pttDown(e){
+  e?.preventDefault?.();
+  if (!(await ensureCtx())) return;
+  MIC.manual = true; MIC.buf = []; MIC.voiced = 0; MIC.speech = 1; MIC.speaking = true; MIC.silent = 0;
+  captureOn(); micSay('录音中…松手发送', 'live');
+  micBtn.textContent = '🎤 松开发送';
+}
+function pttUp(e){
+  e?.preventDefault?.();
+  if (!MIC.manual) return;
+  MIC.manual = false;
+  micBtn.textContent = '🎤 按住说话';
+  endUtterance('松手');
+}
+micBtn.addEventListener('mousedown', pttDown);
+micBtn.addEventListener('mouseup', pttUp);
+micBtn.addEventListener('mouseleave', () => { if (MIC.manual) pttUp(); });
+micBtn.addEventListener('touchstart', pttDown);
+micBtn.addEventListener('touchend', pttUp);
+
+// ── 常听开关
+$('#btnListen').onclick = async () => {
+  ALWAYS = !ALWAYS;
+  $('#btnListen').textContent = '常听: ' + (ALWAYS ? '开' : '关');
+  $('#btnListen').classList.toggle('primary', ALWAYS);
+  $('#btnListen').classList.toggle('off', !ALWAYS);
+  if (ALWAYS){
+    if (await ensureCtx()){ captureOn(); addMsg('dh', '常听打开了：你直接说话，我听到停顿就接话，不用按键。'); }
+  } else {
+    captureOff('常听已关');
+    addMsg('dh', '常听关掉了。要用的时候按住「🎤 按住说话」，或者再点「常听: 开」。');
+  }
+};
+
+// ── 页面一打开就先试着开始听（浏览器允许就算了，不允许等第一次点击）
+setTimeout(() => { if (!MIC.armedOnce) arm().catch(() => {}); }, 600);
+
+// ── 首次交互即自动开始听（浏览器必须先有用户动作才给麦克风）
+window.addEventListener('pointerdown', async function once(){
+  if (MIC.armedOnce) return;
+  await arm();
+  if (ALWAYS) addMsg('dh', '我已经在听了，直接说话就行。说完我会接话；不想让我听就点「常听: 关」。');
+}, {once:false});
+
+// ── 看门狗：任何原因导致采集中断（系统休眠、设备切换、AudioContext 被挂起），
+//    只要还开着「常听」，5 秒内自己接回去，不用人去点。
+setInterval(() => {
+  if (!ALWAYS || !MIC.armedOnce) return;
+  if (MIC.sending || MIC.playing || MIC.manual) return;
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+  if (!MIC.active) captureOn();
+}, 5000);
+
+// ── 事件
+$('#btnNext').onclick = nextCue;
+$('#btnSend').onclick = send;
+$('#msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space'){ e.preventDefault(); nextCue(); }
+});
+$('#btnHealth').onclick = async () => {
+  addMsg('me', '查一下模型性能');
+  const r = await post('/api/monitor/check', {});
+  const d = r.data || {};
+  const c = d.confidence || {};
+  let txt = d.degraded ? '模型性能异常。' : '现在没到报警线。';
+  txt += `近 ${c.recent_n} 个会话平均置信度 ${c.recent}，基线 ${c.baseline}，下滑 ${(c.drift*100).toFixed(1)}%。`;
+  if ((d.reasons||[]).length) txt += '\n' + d.reasons.join('\n');
+  addMsg('dh', txt, [{tool:'model_health', ok:!d.degraded, brief:`degraded=${d.degraded}`}]);
+};
+$('#btnAlarm').onclick = async () => {
+  const on = !document.querySelector('#btnAlarm').dataset.on;
+  await post('/api/alarm', {on, why: '手动演示'});
+  $('#btnAlarm').dataset.on = on ? '1' : '';
+  $('#btnAlarm').textContent = on ? '解除报警' : '报警演示';
+};
+$('#btnVoice').onclick = () => {
+  VOICE_ON = !VOICE_ON;
+  $('#btnVoice').textContent = VOICE_ON ? '静音' : '开声音';
+};
+
+loadScript();
+refreshStatus();
+setInterval(refreshStatus, 4000);
+refreshGpu();
+setInterval(refreshGpu, 2500);
+addMsg('dh', '控制台就绪。我已经在听：直接说话，说完我接话；不想让我听就点「常听: 关」。');
+</script>
+</body>
+</html>

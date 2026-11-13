@@ -1,0 +1,159 @@
+{
+  "voice": "zh-CN-YunxiNeural",
+  "rate": "+6%",
+  "pitch": "+0Hz",
+  "clips": {
+    "self_intro": {
+      "file": "self_intro.mp3",
+      "text": "我是5号选手，本项目的AI编程助手兼智能运维工程师。我根据同事们的需求起草代码，经授权，直接交付到他们指定的文件夹，同时在Git仓库留痕；同事们负责审查和优化。上线之后，我还负责监测模型的检测效率。",
+      "dur": 18.91,
+      "dur_est": true,
+      "bytes": 113472,
+      "scene": "一·项目背景"
+    },
+    "ask_requirement": {
+      "file": "ask_requirement.mp3",
+      "text": "好的，请明确需求。",
+      "dur": 2.64,
+      "dur_est": true,
+      "bytes": 15840,
+      "scene": "三·第一场 第二幕（提示词工程）"
+    },
+    "received": {
+      "file": "received.mp3",
+      "text": "收到。",
+      "dur": 1.56,
+      "dur_est": true,
+      "bytes": 9360,
+      "scene": "三·第一场 第二幕（提示词工程）"
+    },
+    "delivered_1": {
+      "file": "delivered_1.mp3",
+      "text": "1号同事，图像预处理代码已提交到你的项目文件中，请确认。",
+      "dur": 5.59,
+      "dur_est": true,
+      "bytes": 33552,
+      "scene": "三·第一场 第三幕（图像预处理）"
+    },
+    "idle_ready": {
+      "file": "idle_ready.mp3",
+      "text": "好的。我目前处于空闲状态，是否有同事需要辅助开发？",
+      "dur": 6.02,
+      "dur_est": true,
+      "bytes": 36144,
+      "scene": "三·第一场 第三幕"
+    },
+    "accept_2": {
+      "file": "accept_2.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第一场 第三幕"
+    },
+    "delivered_2": {
+      "file": "delivered_2.mp3",
+      "text": "2号同事，yolo26m模型优化代码已放到你的项目文件夹中，请确认。",
+      "dur": 6.84,
+      "dur_est": true,
+      "bytes": 41040,
+      "scene": "三·第二场 第二幕（模型优化）"
+    },
+    "idle_ready_2": {
+      "file": "idle_ready_2.mp3",
+      "text": "好的。我目前处于空闲状态，是否有同事需要辅助开发？",
+      "dur": 6.02,
+      "dur_est": true,
+      "bytes": 36144,
+      "scene": "三·第二场 第二幕"
+    },
+    "accept_3": {
+      "file": "accept_3.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第二场 第二幕"
+    },
+    "alert_abnormal": {
+      "file": "alert_abnormal.mp3",
+      "text": "警报，模型性能异常。",
+      "dur": 2.81,
+      "dur_est": true,
+      "bytes": 16848,
+      "scene": "三·第三场 第二幕（模型性能监控）"
+    },
+    "ack_handle": {
+      "file": "ack_handle.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第三场 第二幕"
+    },
+    "delivered_3": {
+      "file": "delivered_3.mp3",
+      "text": "3号同事，板材缺陷检测系统框架代码已放到你的项目文件夹中，请确认。",
+      "dur": 7.15,
+      "dur_est": true,
+      "bytes": 42912,
+      "scene": "三·第三场 第三幕（软件开发与集成）"
+    },
+    "idle_ready_3": {
+      "file": "idle_ready_3.mp3",
+      "text": "好的。我目前处于空闲状态，是否有同事需要辅助开发？",
+      "dur": 6.02,
+      "dur_est": true,
+      "bytes": 36144,
+      "scene": "三·第三场 第三幕"
+    },
+    "accept_4": {
+      "file": "accept_4.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第三场 第三幕"
+    },
+    "ask_requirement_2": {
+      "file": "ask_requirement_2.mp3",
+      "text": "好的，请提出需求。",
+      "dur": 2.69,
+      "dur_est": true,
+      "bytes": 16128,
+      "scene": "三·第四场 第一幕（数据分析）"
+    },
+    "received_2": {
+      "file": "received_2.mp3",
+      "text": "收到。",
+      "dur": 1.56,
+      "dur_est": true,
+      "bytes": 9360,
+      "scene": "三·第四场 第一幕"
+    },
+    "delivered_4": {
+      "file": "delivered_4.mp3",
+      "text": "4号同事，数据可视化代码已放到你的项目文件夹中，请确认。",
+      "dur": 6.07,
+      "dur_est": true,
+      "bytes": 36432,
+      "scene": "三·第四场 第三幕（数据可视化）"
+    },
+    "ack_4": {
+      "file": "ack_4.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第四场 第三幕"
+    },
+    "ack_all": {
+      "file": "ack_all.mp3",
+      "text": "好的。",
+      "dur": 1.54,
+      "dur_est": true,
+      "bytes": 9216,
+      "scene": "三·第一场 第四幕"
+    }
+  }
+}

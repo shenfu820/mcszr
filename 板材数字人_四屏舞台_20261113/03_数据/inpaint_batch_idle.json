@@ -1,0 +1,10 @@
+{
+  "video": "idle",
+  "frames": 124,
+  "strength": 0.58,
+  "steps": 36,
+  "model": "C:\\Users\\Administrator\\.cache\\modelscope\\models\\AI-ModelScope--stable-diffusion-inpainting\\snapshots\\master",
+  "seed": 20261113,
+  "out": "C:\\Users\\Administrator\\Desktop\\数字人\\板材数字人_四屏舞台_20261113\\01_人物素材_复用\\H3\\idle_rgb_alpha_work.mp4",
+  "seconds": 567.3
+}

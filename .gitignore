@@ -1,0 +1,42 @@
+# ── 运行环境（不进仓库）
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.idea/
+node_modules/
+
+# ── 大文件 / 中间产物
+# 1.6GB 的 3D 基础模型
+model.ckpt
+# 建模与调试工具链（含 900MB 下载包）
+_tools/
+# 每次 GPU 作业的权重与日志（跑一次 44MB）
+ops_jobs/
+# 语音测试样本
+_probe_asr/
+# 建模素材包 90MB
+小星数字人_建模与制作素材_20261113/
+# 四屏舞台的验收截图 39MB
+板材数字人_四屏舞台_20261113/06_验收截图/
+# 验收截图按需自己生成
+screenshots/
+# VRM/权重大件，见 docs/部署与运行.md
+models/
+# 数字人运行时生成的交付物（自带 git 仓库）
+交付/
+
+# ── 前端构建残留
+avatar/esbuild.exe
+avatar/*.map
+avatar/dist/*.map
+avatar/three*.js
+avatar/*.wasm
+
+# ── 其它
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

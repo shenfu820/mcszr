@@ -1,0 +1,13 @@
+{
+  "_说明": "数字人的大模型通道配置。留空 api_key 时自动走离线意图引擎（比赛现场推荐，不依赖网络）。要用真模型就把 key 填进 api_key，或设环境变量 DEEPSEEK_API_KEY。",
+  "enabled": true,
+  "base_url": "https://api.deepseek.com/v1",
+  "model": "deepseek-chat",
+  "api_key": "",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "temperature": 0.2,
+  "max_rounds": 4,
+  "timeout": 60,
+  "tts": "edge",
+  "tts_voice": "zh-CN-YunxiNeural"
+}

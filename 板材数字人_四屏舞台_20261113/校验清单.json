@@ -1,0 +1,378 @@
+{
+  "package": "板材数字人_四屏舞台_20261113",
+  "files": 74,
+  "total_bytes": 58089204,
+  "note": "本表为本包内文件的实测尺寸与 SHA256；人物素材的复制来源见 01_人物素材_复用/来源与SHA256.json",
+  "items": [
+    {
+      "path": "00_先读我.txt",
+      "bytes": 4094,
+      "sha256": "04bf6c31a1bca9e86c634d718452193121b731b116ef0eb03143629701e8b5a6"
+    },
+    {
+      "path": "README.md",
+      "bytes": 14668,
+      "sha256": "933a5de9da852b5a49d693f155eab439d9deb14433cf69ede31be99f1cb9ad08"
+    },
+    {
+      "path": "xiaoxing.html",
+      "bytes": 14457,
+      "sha256": "7d04b97164dad38d6ea16f10b684630218ee30766d1d0984feaa0f74c7ac9c84"
+    },
+    {
+      "path": "01_人物素材_复用/pose_still_rgba.png",
+      "bytes": 413235,
+      "sha256": "1df5d4f94aa28d4f1d5e116fd4b5d5a5f4e5cd01a1e3be53665e7b82389dd1b0"
+    },
+    {
+      "path": "01_人物素材_复用/工装夹克_商品图.jpg",
+      "bytes": 21115,
+      "sha256": "ec803afdea0d5b00cf1fc95d22c42ad53fcfdb673ccee27a01659b2294028415"
+    },
+    {
+      "path": "01_人物素材_复用/来源与SHA256.json",
+      "bytes": 2163,
+      "sha256": "9e81ccb98f5100d94ea4f9e18afa0849c3525018dbc41c8015c4562afdc82fbc"
+    },
+    {
+      "path": "01_人物素材_复用/现用形象定妆图_anchor_J.png",
+      "bytes": 426846,
+      "sha256": "009c9c02d3c7d2ef4f8e3eb5af48571d178846830ea378f66542e1910f9f193a"
+    },
+    {
+      "path": "01_人物素材_复用/H3/idle_rgb_alpha.mp4",
+      "bytes": 2342398,
+      "sha256": "bc75aeef245d6a57c2ed3404b1de8661a735656bf4a315bd46420b22a1963fb6"
+    },
+    {
+      "path": "01_人物素材_复用/H3/idle_rgb_alpha_work.mp4",
+      "bytes": 2893938,
+      "sha256": "8846733d71f4f4856ebd55e15e23bba9a79384ffeefbe4590c772bd294c46545"
+    },
+    {
+      "path": "01_人物素材_复用/H3/idle_rgb_alpha_works.mp4",
+      "bytes": 2733038,
+      "sha256": "c5981f8e2d801f9ba63756ff7ca4a69a098402da240060566efcf82db61f8b11"
+    },
+    {
+      "path": "01_人物素材_复用/H3/plate.json",
+      "bytes": 212,
+      "sha256": "7ed0092f6e1b3a2c03d61cd5357a38c0959f39ed8bad3b56f1bd697922744ed4"
+    },
+    {
+      "path": "01_人物素材_复用/H3/talk_rgb_alpha.mp4",
+      "bytes": 7200830,
+      "sha256": "09411af9bccc8f1a87b3e60bb3ff80613f752831646e381f3b2513c3a60a0c14"
+    },
+    {
+      "path": "02_四屏舞台/index.html",
+      "bytes": 2428,
+      "sha256": "62a8aeb10140ebed67b18d520e85ba09ef8344e88ce2aec4fc077875012d40cb"
+    },
+    {
+      "path": "02_四屏舞台/assets/detected_preview.jpg",
+      "bytes": 46983,
+      "sha256": "a946025270f7c5b0e72d7e83ca761f77b1b60f7cd4d3120be94c2a720d4bc080"
+    },
+    {
+      "path": "02_四屏舞台/assets/garment_alpha_debug.png",
+      "bytes": 1786,
+      "sha256": "7c7704cd25ba83ab05e07854272b975858024a43adba28b475274f1ce58f1fae"
+    },
+    {
+      "path": "02_四屏舞台/assets/garment_source.png",
+      "bytes": 85167,
+      "sha256": "69bcba2836d6a9288d5ab1956987f9155a5196054a68078098d799f4de451520"
+    },
+    {
+      "path": "02_四屏舞台/assets/jacket_fit.png",
+      "bytes": 210542,
+      "sha256": "6cf6f613771c22d2ca431faea921533855101a4286f1fdc5c4b329ce85ca0312"
+    },
+    {
+      "path": "02_四屏舞台/assets/jacket_grain.png",
+      "bytes": 4253,
+      "sha256": "e863be7895becd47f31c5b30316b7239a5c2f9767190a515dca0ca88c1d20994"
+    },
+    {
+      "path": "02_四屏舞台/assets/jacket_maps.png",
+      "bytes": 188536,
+      "sha256": "17c11c1babe603030574954c747c27c342d8e5ccd55f35404f01d27cd97d2ee6"
+    },
+    {
+      "path": "02_四屏舞台/assets/jacket_plate.png",
+      "bytes": 273746,
+      "sha256": "1bda49a4b2fa0cbb4d6a5bb8c7ce321491d81f23709a2ed240d426474b8af76f"
+    },
+    {
+      "path": "02_四屏舞台/assets/jacket_swatch.png",
+      "bytes": 6522,
+      "sha256": "467e3f561ea1f20f9b5c6d637a86f78c16be97c323c7c2a073a382fd8e3e6d47"
+    },
+    {
+      "path": "02_四屏舞台/css/stage.css",
+      "bytes": 14839,
+      "sha256": "3288d11dd122652098a7814642bb69b4579692e12be46d37f04c5787ba429a84"
+    },
+    {
+      "path": "02_四屏舞台/js/character.js",
+      "bytes": 14869,
+      "sha256": "5685f225fe7e82468a6721870b190acd1078022e5862488af95964d5d0bf6dd5"
+    },
+    {
+      "path": "02_四屏舞台/js/panels.js",
+      "bytes": 10362,
+      "sha256": "7aca2943ed6499e55f7f8384478f984ab41a61be4969d890b61f4a8cc5482239"
+    },
+    {
+      "path": "02_四屏舞台/js/stage.js",
+      "bytes": 19262,
+      "sha256": "7101f37a3eaab5341feb69f3bf6452d059f05f92dc3c82512cd75f26f17a7cd9"
+    },
+    {
+      "path": "03_数据/build_snapshot.py",
+      "bytes": 23874,
+      "sha256": "a54b4b7d916618f6b0228e35bd1e5ef0b9ff002a7318484109a9e3c132cc9e81"
+    },
+    {
+      "path": "03_数据/inpaint_batch.py",
+      "bytes": 8507,
+      "sha256": "1d9c952a80e27cc41b8b944411476db774aae65d5c8495ad1192ba8abf227e82"
+    },
+    {
+      "path": "03_数据/inpaint_batch_idle.json",
+      "bytes": 401,
+      "sha256": "0c24a5859c4c68da72bb54265ebf5bd5e1573005da893c3821123a58750d4c8e"
+    },
+    {
+      "path": "03_数据/inpaint_meta.json",
+      "bytes": 733,
+      "sha256": "ef29426a16bf6c7746770fe93cd1fcba26480e94d25e67858711e0d2baed6656"
+    },
+    {
+      "path": "03_数据/inpaint_outfit.py",
+      "bytes": 6228,
+      "sha256": "d4a3ed6a3bb6e80064523419c637d64ef9c7db45a054c1af59a13a3cb0cabc1b"
+    },
+    {
+      "path": "03_数据/inpaint_refine.py",
+      "bytes": 6766,
+      "sha256": "9dcd25d8d1cea32dc2229737a0db81149f00d1b3c6d8d6e9667df896fdeecaec"
+    },
+    {
+      "path": "03_数据/make_manifest.py",
+      "bytes": 1709,
+      "sha256": "f84fd6b4b34cbf4334f978a5e22f213f6cf2b713e85226c716df52f1ca1977bd"
+    },
+    {
+      "path": "03_数据/outfit.json",
+      "bytes": 1372,
+      "sha256": "5a7c8be9955f437fc7c2f3647ffbd975dd9d048976a03b1a69e4fbc0834e1192"
+    },
+    {
+      "path": "03_数据/prepare_assets.py",
+      "bytes": 3506,
+      "sha256": "9002ac2937fed14802e2d4f469e6653b72daa7330d3ead3aeb1993c539bf6b95"
+    },
+    {
+      "path": "03_数据/prepare_garment_fit.py",
+      "bytes": 10277,
+      "sha256": "0ef9c0f123cb7ccf5a52829e68db6a08c53dc315ff4022ca11ad01ab45e04edb"
+    },
+    {
+      "path": "03_数据/prepare_garment_plate.py",
+      "bytes": 8992,
+      "sha256": "b129261659823d0fa6371adfc3fab333fd649d7004fe22338942b1c7d44affff"
+    },
+    {
+      "path": "03_数据/prepare_outfit.py",
+      "bytes": 4899,
+      "sha256": "177321736011c20b2bc61d006c85c4a7e598525bada649b7aad97599e867fb5f"
+    },
+    {
+      "path": "03_数据/shot_stage.mjs",
+      "bytes": 4611,
+      "sha256": "0a075c2025e12599a9897e82c57d994ffe462015579b7e60ddeb91b4f5c124a0"
+    },
+    {
+      "path": "03_数据/smooth_idle.json",
+      "bytes": 258,
+      "sha256": "3f7215db3b82f252c534b031a5ecbbbb35d7f2030b2280d5979eccd13dc489cd"
+    },
+    {
+      "path": "03_数据/smooth_video.py",
+      "bytes": 4219,
+      "sha256": "2dea599a927134cca46eeca54bd00dc00feee70733775d7eba97175629620111"
+    },
+    {
+      "path": "03_数据/snapshot.js",
+      "bytes": 8353,
+      "sha256": "4cfb0a5c6e18cb9795b628ba14c93783714e55bdd987fc2f58cc826852e39b80"
+    },
+    {
+      "path": "03_数据/snapshot.json",
+      "bytes": 12703,
+      "sha256": "f06dd328d4d9e9921689f7ef5e4aee3ee168a1dbd69f4d438ca634cb31b7d127"
+    },
+    {
+      "path": "04_台词配音/make_voice.py",
+      "bytes": 1751,
+      "sha256": "ec69433c919949df3af747d11885723dfe76837aeeaea3f73ae30ee7a10c7911"
+    },
+    {
+      "path": "04_台词配音/script.js",
+      "bytes": 1787,
+      "sha256": "a80ee47deafced006ebec9a80ee0da53c02af8ef51669b83b0af9128df6cd672"
+    },
+    {
+      "path": "04_台词配音/script.json",
+      "bytes": 1996,
+      "sha256": "ecfdb9d6f65922dd314bb0d68e04b5d958c71a2cd568cac88960d7fab1c4ffa1"
+    },
+    {
+      "path": "04_台词配音/voice/inspect.mp3",
+      "bytes": 149472,
+      "sha256": "74f21a4f60ef5c6c2827003b581a0f442d6f98a49bb73b91c97f17dcfab1256e"
+    },
+    {
+      "path": "04_台词配音/voice/intro.mp3",
+      "bytes": 84384,
+      "sha256": "bc74d186ab521911d4965b95dcd0f090c84270bfaf2e334ce673ce60efe52a8e"
+    },
+    {
+      "path": "04_台词配音/voice/learn.mp3",
+      "bytes": 133776,
+      "sha256": "ef3e8029a66f8f5775d48b75435e543ef052db6b6add3fb4adb1eb64c0ba563d"
+    },
+    {
+      "path": "04_台词配音/voice/outro.mp3",
+      "bytes": 46368,
+      "sha256": "113a8d2e25891af3e33e5204dd0404b7a19075e8a39b592e499e7df6286a3841"
+    },
+    {
+      "path": "04_台词配音/voice/review.mp3",
+      "bytes": 99360,
+      "sha256": "c818747921eea6a21193335a028dfaf0c202babba45b9d52c57425a5c0785ad9"
+    },
+    {
+      "path": "04_台词配音/voice/screen.mp3",
+      "bytes": 93600,
+      "sha256": "b903a80d7b4a1f8f7c8ac1d877bec2ea3cd35dcbece33ff8c52ef4d7c2570052"
+    },
+    {
+      "path": "05_服务/stage_server.py",
+      "bytes": 9971,
+      "sha256": "3f89d020cf82afd521bd8ecfe01f8bfd64ae9e84e6da624a94223bc510b6fb5b"
+    },
+    {
+      "path": "05_服务/wincap.py",
+      "bytes": 6983,
+      "sha256": "e9149b4340d17d5edc926ec4398aad267c4aad4d7811d2762cf65044790123df"
+    },
+    {
+      "path": "05_服务/停止四屏.bat",
+      "bytes": 402,
+      "sha256": "c782bac60e6a6e1a7e870022cd1cce4f5c8bbdc329d68d334350af643bcfb19f"
+    },
+    {
+      "path": "05_服务/启动四屏.bat",
+      "bytes": 2120,
+      "sha256": "92232edc4379d48f337e358d64ef867db206d6ddfd65e3117d59c0bac934130a"
+    },
+    {
+      "path": "06_验收截图/01_全景_四屏.png",
+      "bytes": 1293917,
+      "sha256": "a98dd4c44a3b0dbcb27b35ac843636ebbb3b1bebcf8ac22886a0844ca4779345"
+    },
+    {
+      "path": "06_验收截图/02_检测系统.png",
+      "bytes": 3542012,
+      "sha256": "80a5b074b4a06dc86871620a3457e897b0fb8f8aeb92eb08d21892374cc6d0d0"
+    },
+    {
+      "path": "06_验收截图/03_大屏可视化.png",
+      "bytes": 3349273,
+      "sha256": "f452b9d5cd7c00368db9e0fcd565e6dac6d123eb09bfb8ef9ba0b5dfa8bc0241"
+    },
+    {
+      "path": "06_验收截图/04_六专家复核.png",
+      "bytes": 3488003,
+      "sha256": "c64678b52129087f9365bf3dea80631c6edfd96d50efa478e6e290ddc9d3ad70"
+    },
+    {
+      "path": "06_验收截图/05_模型自学习.png",
+      "bytes": 3372749,
+      "sha256": "9631c810e57f05894bd286a5be131fbe5123a37d2e409053ecea892920d6a916"
+    },
+    {
+      "path": "06_验收截图/06_静态兜底_still.png",
+      "bytes": 1307252,
+      "sha256": "356f001857fd5eb522daa0ba2032a597c239e31197460249553802c617093672"
+    },
+    {
+      "path": "06_验收截图/07_真实系统_全景.png",
+      "bytes": 1471132,
+      "sha256": "b5c3b0830b7350bde8b1eafc807ebaec355841377d510ef03fc1f3708091b725"
+    },
+    {
+      "path": "06_验收截图/08_现场窗口_实拍.jpg",
+      "bytes": 110725,
+      "sha256": "ebda6365a4f58efc27ba926546a37eb7c48f4cdd3b577923179bc54541fe7811"
+    },
+    {
+      "path": "06_验收截图/09_换装_工装上衣.png",
+      "bytes": 4004396,
+      "sha256": "acf4bd270b2c3dfd5dd99dc8b60fe30e43265b81f7f9c2e85092bf1e402ba09a"
+    },
+    {
+      "path": "06_验收截图/10_对比_原西装.png",
+      "bytes": 3916996,
+      "sha256": "bcacbb80a997a29ce3bf3ad048058538ecaae4d169144b836b9feb70fd06ffb8"
+    },
+    {
+      "path": "06_验收截图/11_换装对比_人物特写.png",
+      "bytes": 1194994,
+      "sha256": "a594c0adbc03a2dd3c91c212a42f7a2491bffb8df08321617b04951128f8d193"
+    },
+    {
+      "path": "06_验收截图/12_usdz扫描件_几何预览.png",
+      "bytes": 167188,
+      "sha256": "ce2bd9aa94358ebe99dbb100563d1eeaba7100efb7ee03981f37d8ec58268a54"
+    },
+    {
+      "path": "06_验收截图/13_usdz扫描件_斜35度.png",
+      "bytes": 159543,
+      "sha256": "73abe331edd92ff07cca8059887ad3bc958f007451179c37cb0614d987700255"
+    },
+    {
+      "path": "06_验收截图/14_换装_说话中.png",
+      "bytes": 4014063,
+      "sha256": "a40f510a665c1b1aebfca78eeb67b846f2d86adf6563e52ed5876d872fe26037"
+    },
+    {
+      "path": "06_验收截图/15_换装v3_结构转移.png",
+      "bytes": 3974446,
+      "sha256": "558647f21d5367483164fb0aadc4888d4feea1c7a6f3609d49c0069d63ec6be5"
+    },
+    {
+      "path": "06_验收截图/16_换装v4_照片版.png",
+      "bytes": 3928322,
+      "sha256": "e0f10beb1388bd43c8c9d3dcead5934c8a5e5741610ca2e9a3c178c2b71d3975"
+    },
+    {
+      "path": "06_验收截图/17_生成式换装_单帧验证.png",
+      "bytes": 352384,
+      "sha256": "f47517bacaeb01cd85c166740596abffee49db86e11cafde8113fe0ea17db387"
+    },
+    {
+      "path": "06_验收截图/18_生成式换装_合成+重绘.png",
+      "bytes": 530055,
+      "sha256": "51309a35c218b58d8628b050ea93039b538d8e8e49444a4144bcfa300b1c62d5"
+    },
+    {
+      "path": "06_验收截图/19_批处理抽样帧_方向已修正.png",
+      "bytes": 226087,
+      "sha256": "90b12a660edfaa625a54d351f743c0e37ca89ae028c2ed049abcc1d605196ae1"
+    }
+  ]
+}

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小星 · 板材检测项目数字工程师</title>
+<style>
+  :root{--bg:#0b0c0e;--panel:#14161a;--line:#242830;--txt:#e8eef5;--dim:#8b97a6;
+        --amber:#d98a3d;--g:#3ddc97;--r:#ff6b6b;--y:#ffc857;--b:#39b6ff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+            font-family:"Microsoft YaHei UI",system-ui,sans-serif;}
+  .wrap{display:flex;height:100%;}
+  /* 左侧：小星 */
+  .stage{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;
+         align-items:center;justify-content:flex-end;
+         background:radial-gradient(circle at 50% 42%,#1b1a19 0%,#0b0c0e 62%);}
+  .glow{position:absolute;left:50%;top:46%;width:min(72vh,620px);height:min(72vh,620px);
+        transform:translate(-50%,-50%);pointer-events:none;filter:blur(8px);
+        background:radial-gradient(circle,rgba(217,138,61,.20),rgba(217,138,61,.05) 46%,transparent 70%);}
+  #avatar{position:relative;height:calc(100% - 132px);width:auto;max-width:100%;
+          aspect-ratio:400/700;display:block;margin-bottom:6px;
+          filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));}
+  .plinth{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
+          width:min(46%,300px);height:34px;border-radius:50%;
+          background:radial-gradient(ellipse,rgba(217,138,61,.30),transparent 68%);filter:blur(3px);}
+  /* 字幕 */
+  .sub{position:relative;width:calc(100% - 28px);max-width:760px;margin:0 0 14px;
+       background:rgba(16,18,22,.92);border:1px solid var(--line);border-radius:14px;
+       padding:11px 15px;backdrop-filter:blur(6px);}
+  .sub .who{font-size:10.5px;letter-spacing:1.6px;color:var(--amber);font-weight:800;}
+  .sub .who em{font-style:normal;color:var(--dim);letter-spacing:0;font-weight:400;margin-left:8px;}
+  .sub p{font-size:13.5px;line-height:1.65;margin-top:4px;color:#dfe8f2;min-height:22px;
+         white-space:pre-wrap;word-break:break-word;}
+  .sub .hear{margin-top:6px;font-size:11px;color:var(--b);min-height:15px;}
+  /* 顶部状态 */
+  .top{position:absolute;top:10px;left:0;right:0;display:flex;gap:8px;align-items:center;
+       padding:0 14px;font-size:11px;color:var(--dim);z-index:5;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);}
+  .pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:#11141a;}
+  .pill b{color:var(--txt);}
+  .lvl{width:52px;height:7px;border-radius:4px;background:#1a1d23;overflow:hidden;display:inline-block;
+       vertical-align:middle;border:1px solid var(--line);}
+  .lvl>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3ddc97,#ffc857);transition:width .08s;}
+  .top .right{margin-left:auto;display:flex;gap:8px;}
+  button{font-family:inherit;font-size:11.5px;padding:5px 11px;border-radius:8px;cursor:pointer;
+         background:#1a1f27;color:#cfe0f0;border:1px solid var(--line);transition:.15s;}
+  button:hover{background:#232a34;}
+  button.on{background:linear-gradient(180deg,#2f9e6f,#1d6b4a);border-color:var(--g);color:#eafff5;}
+  /* 右侧：运维屏 */
+  .ops{width:420px;flex:0 0 420px;border-left:1px solid var(--line);background:#080e14;}
+  .ops iframe{width:100%;height:100%;border:0;display:block;}
+  .hint{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:10px;color:#4a5563;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <div class="top">
+      <span class="dot" id="dot"></span>
+      <span class="pill" id="pMic">麦克风 <b>未激活</b></span>
+      <span class="lvl"><i id="lvl"></i></span>
+      <span class="pill" id="pGpu">GPU <b>-</b></span>
+      <div class="right">
+        <button id="btnListen" class="on">常听: 开</button>
+        <button id="btnSay">🎤 按住说话</button>
+        <button id="btnMute">静音</button>
+      </div>
+    </div>
+    <div class="glow"></div>
+    <canvas id="avatar"></canvas>
+    <div class="plinth"></div>
+    <div class="sub">
+      <div class="who">小星<em>板材检测项目 · 数字工程师</em></div>
+      <p id="subText">我已经在听了，直接说话就行。</p>
+      <div class="hear" id="hear"></div>
+    </div>
+  </div>
+  <div class="ops"><iframe id="opsFrame" src="/avatar/ops.html" title="运维屏 · 模型性能"></iframe></div>
+</div>
+<div class="hint">常听开：直接说话 · 空格/按钮可手动说 · ?still=1 用静态帧兜底</div>
+
+<script src="02_四屏舞台/js/character.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const qs = new URLSearchParams(location.search);
+
+// ─────────────── 小星形象（复用四屏舞台的播放器）
+const rig = new CharacterRig($('#avatar'), {
+  idleSrc : '01_人物素材_复用/H3/idle_rgb_alpha.mp4',
+  talkSrc : '01_人物素材_复用/H3/talk_rgb_alpha.mp4',
+  stillSrc: '01_人物素材_复用/pose_still_rgba.png',
+  forceStill: qs.get('still') === '1'
+});
+function speak(on){ try{ rig.setSpeaking(!!on); }catch(e){} }
+
+// ─────────────── 状态显示
+function setMic(text, cls){
+  $('#pMic').innerHTML = '麦克风 <b>' + text + '</b>';
+  $('#pMic').style.borderColor = cls === 'live' ? '#264d3c' : (cls === 'bad' ? '#5a2a2a' : 'var(--line)');
+  $('#pMic').querySelector('b').style.color = cls === 'live' ? 'var(--g)' : (cls === 'bad' ? 'var(--r)' : 'var(--txt)');
+  $('#dot').style.background = cls === 'live' ? 'var(--g)' : (cls === 'bad' ? 'var(--r)' : 'var(--dim)');
+}
+function say(t){ $('#subText').textContent = t; }
+function hear(t){ $('#hear').textContent = t ? '（听到）' + t : ''; }
+
+// ─────────────── 播放它自己的声音 + 说话动画
+let AUDIO = null, MUTED = false, PLAYING = false;
+function playReply(url){
+  if (!url || MUTED){ return Promise.resolve(); }
+  return new Promise(res => {
+    try {
+      AUDIO = new Audio(url);
+      PLAYING = true; speak(true);
+      const fin = () => { if (!PLAYING) return; PLAYING = false; speak(false); res(); };
+      AUDIO.onended = fin; AUDIO.onerror = fin;
+      AUDIO.play().catch(fin);
+      setTimeout(fin, 15000);   // 兜底，绝不卡住
+    } catch (e) { res(); }
+  });
+}
+$('#btnMute').onclick = () => {
+  MUTED = !MUTED;
+  $('#btnMute').textContent = MUTED ? '开声音' : '静音';
+  $('#btnMute').classList.toggle('on', !MUTED);
+  if (MUTED && AUDIO) { try { AUDIO.pause(); } catch (e) {} PLAYING = false; speak(false); }
+};
+
+// ─────────────── 常听（和数字人控制台同一套逻辑）
+const MIC = {ctx:null, stream:null, node:null, sr:0, active:false, manual:false,
+             buf:[], voiced:0, speech:0, speaking:false, silent:0, floor:0.008,
+             sending:false, armed:false, errShown:false};
+const MIN_SPEECH = 0.5;   // 真正说话累计超过 0.5 秒才当一句，噪声过不去
+let ALWAYS = true;
+
+async function ensureCtx(){
+  if (MIC.ctx) return true;
+  if (!navigator.mediaDevices){ setMic('浏览器不支持', 'bad'); return false; }
+  try {
+    MIC.stream = await navigator.mediaDevices.getUserMedia({
+      audio:{channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+  } catch (e) {
+    setMic('被拒/占用', 'bad');
+    if (!MIC.errShown){ MIC.errShown = true;
+      say('麦克风打不开（' + e.name + '）。检查地址栏左侧的麦克风权限，或是不是别的程序占着麦克风。'); }
+    return false;
+  }
+  MIC.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  MIC.sr = MIC.ctx.sampleRate;
+  const src = MIC.ctx.createMediaStreamSource(MIC.stream);
+  MIC.node = MIC.ctx.createScriptProcessor(4096, 1, 1);
+  MIC.node.onaudioprocess = onAudio;
+  src.connect(MIC.node); MIC.node.connect(MIC.ctx.destination);
+  return true;
+}
+
+function onAudio(e){
+  const d = e.inputBuffer.getChannelData(0);
+  let s = 0; for (let i = 0; i < d.length; i++) s += d[i]*d[i];
+  const rms = Math.sqrt(s / d.length);
+  $('#lvl').style.width = Math.min(100, Math.round(rms * 900)) + '%';
+  if (MIC.sending || PLAYING || !MIC.active) return;
+
+  if (!MIC.speaking) MIC.floor = MIC.floor * 0.95 + rms * 0.05;
+  const TH = Math.max(0.010, MIC.floor * 2.2);
+
+  if (!MIC.speaking){
+    if (MIC.manual) MIC.speaking = true;
+    else if (rms > TH){ MIC.speaking = true; MIC.silent = 0; MIC.voiced = 0; setMic('听到你在说…', 'live'); }
+    else return;
+  }
+  MIC.buf.push(new Float32Array(d));
+  MIC.voiced += d.length / MIC.sr;
+  if (rms > TH) MIC.speech += d.length / MIC.sr;
+  if (MIC.manual) return;
+  if (rms > TH) MIC.silent = 0;
+  else { MIC.silent += d.length / MIC.sr; if (MIC.silent > 0.8) return endUtterance(); }
+  if (MIC.voiced > 15) endUtterance();
+}
+
+function wav16(chunks, sr){
+  let n = 0; chunks.forEach(c => n += c.length);
+  const flat = new Float32Array(n); let o = 0;
+  chunks.forEach(c => { flat.set(c, o); o += c.length; });
+  const target = 16000, ratio = sr / target, m = Math.floor(n / ratio);
+  const out = new Int16Array(m);
+  for (let i = 0; i < m; i++){
+    const x = i * ratio, i0 = Math.floor(x), i1 = Math.min(n-1, i0+1);
+    const v = flat[i0] + (flat[i1] - flat[i0]) * (x - i0);
+    out[i] = Math.max(-32768, Math.min(32767, v * 32767));
+  }
+  const buf = new ArrayBuffer(44 + out.length * 2), dv = new DataView(buf);
+  const ws = (p, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(p+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4, 36 + out.length*2, true); ws(8,'WAVE');
+  ws(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,target,true); dv.setUint32(28,target*2,true); dv.setUint16(32,2,true);
+  dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40, out.length*2, true);
+  new Int16Array(buf, 44).set(out);
+  return buf;
+}
+
+function captureOn(){
+  if (MIC.active) return;
+  MIC.active = true; MIC.speaking = false; MIC.silent = 0; MIC.voiced = 0; MIC.speech = 0; MIC.buf = [];
+  setMic(ALWAYS ? '常听中 · 直接说' : '已就绪', 'live');
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+}
+function captureOff(t){ MIC.active = false; MIC.speaking = false; if (t) setMic(t, ''); }
+
+async function endUtterance(){
+  const chunks = MIC.buf; MIC.buf = [];
+  const speech = MIC.speech;
+  MIC.voiced = 0; MIC.speech = 0; MIC.speaking = false; MIC.silent = 0;
+  captureOff('处理中…');
+  if (speech < MIN_SPEECH || !chunks.length){ if (ALWAYS) captureOn(); return; }
+  MIC.sending = true;
+  say('…');
+  try {
+    const r = await fetch('/api/voice', {method:'POST',
+      headers:{'Content-Type':'application/octet-stream'}, body: wav16(chunks, MIC.sr)});
+    const j = await r.json();
+    if (j.ok && j.silent){
+      hear('');                       // 听不清：不出声，安静接着听
+      say('我在听，直接说话就行。');
+    } else if (j.ok){
+      hear(j.heard || '没听到内容');
+      const d = j.data || {};
+      say(d.say || j.say || '（没有回复）');
+      await playReply(j.audio || '');
+    } else {
+      say('语音这条路没通：' + (j.error || ''));
+    }
+  } catch (e) { say('语音接口异常：' + e.message); }
+  MIC.sending = false;
+  if (ALWAYS) captureOn();
+  refreshGpu();
+}
+
+async function arm(){
+  if (!(await ensureCtx())) return;
+  MIC.armed = true;
+  if (ALWAYS) captureOn();
+}
+// 按住说话
+async function pttDown(e){ e?.preventDefault?.(); if (!(await ensureCtx())) return;
+  MIC.manual = true; MIC.buf = []; MIC.voiced = 0; MIC.speech = 1; MIC.speaking = true; MIC.silent = 0;
+  captureOn(); setMic('录音中…松手发送', 'live'); $('#btnSay').textContent = '🎤 松开发送'; }
+function pttUp(e){ e?.preventDefault?.(); if (!MIC.manual) return;
+  MIC.manual = false; $('#btnSay').textContent = '🎤 按住说话'; endUtterance(); }
+$('#btnSay').addEventListener('mousedown', pttDown);
+$('#btnSay').addEventListener('mouseup', pttUp);
+$('#btnSay').addEventListener('touchstart', pttDown);
+$('#btnSay').addEventListener('touchend', pttUp);
+
+$('#btnListen').onclick = async () => {
+  ALWAYS = !ALWAYS;
+  $('#btnListen').textContent = '常听: ' + (ALWAYS ? '开' : '关');
+  $('#btnListen').classList.toggle('on', ALWAYS);
+  if (ALWAYS){ if (await ensureCtx()){ captureOn(); say('常听打开了，你直接说话就行。'); } }
+  else { captureOff('常听已关'); say('常听关掉了。要用的时候点「🎤 按住说话」。'); }
+};
+
+window.addEventListener('pointerdown', async () => {
+  if (MIC.armed) return;
+  await arm();
+  if (ALWAYS) { say('我在听，直接说话就行。'); }
+});
+setTimeout(() => { if (!MIC.armed) arm().catch(() => {}); }, 600);
+
+// 看门狗：只要常听还开着，采集中断了就自己接回去
+setInterval(() => {
+  if (!ALWAYS || !MIC.armed || MIC.sending || PLAYING || MIC.manual) return;
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+  if (!MIC.active) captureOn();
+}, 5000);
+
+// ─────────────── GPU 状态
+async function refreshGpu(){
+  try {
+    const d = (await (await fetch('/api/ops')).json()).data || {};
+    const g = d.gpu || {}, j = d.job || {};
+    const js = j.state === 'running' ? `${j.label} ${j.epoch || '起'}/${j.epochs || ''}` :
+               (j.state === 'done' ? '刚跑完' : (j.state === 'failed' ? '作业失败' : '空闲'));
+    $('#pGpu').innerHTML = 'GPU <b>' + (g.util ?? 0) + '%</b> ' + (g.mem_used ?? 0) + 'MB · ' + js;
+  } catch (e) {}
+}
+refreshGpu(); setInterval(refreshGpu, 3000);
+
+// ─────────────── 跟随控制台的剧本（点 cue 时小星也播）
+try {
+  const es = new EventSource('/api/events');
+  es.addEventListener('dh', ev => {
+    const m = JSON.parse(ev.data);
+    if (m.type === 'say'){
+      say(m.text || '');
+      if (m.audio) playReply(m.audio); else { speak(true); setTimeout(() => speak(false), 1400); }
+    }
+    if (m.type === 'alarm'){
+      document.body.style.boxShadow = m.on ? 'inset 0 0 0 3px #ff6b6b' : 'none';
+    }
+  });
+} catch (e) {}
+</script>
+</body>
+</html>

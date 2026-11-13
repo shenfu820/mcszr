@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>板材缺陷质量看板</title>
+<style>
+  :root{--bg:#070d14;--panel:#0e1822;--line:#1d2c3b;--txt:#e8f2fa;--dim:#7f95a9;
+        --g:#3ddc97;--b:#39b6ff;--r:#ff6b6b;--y:#ffc857;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:radial-gradient(1200px 600px at 50% -10%,#12212e 0%,var(--bg) 60%);
+       color:var(--txt);font-family:"Microsoft YaHei UI",system-ui,sans-serif;min-height:100vh;padding:18px 22px;}
+  header{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;}
+  h1{font-size:21px;letter-spacing:2px;font-weight:800;}
+  .clock{margin-left:auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;}
+  .card{background:linear-gradient(180deg,#0f1a24,#0b141d);border:1px solid var(--line);
+        border-radius:14px;padding:16px 18px;}
+  .k{font-size:12px;color:var(--dim);letter-spacing:1px;margin-bottom:8px;}
+  .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .v small{font-size:13px;font-weight:500;color:var(--dim);margin-left:4px;}
+  .two{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;margin-bottom:14px;}
+  .two3{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  canvas{width:100%;display:block;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #16232f;}
+  th{color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.5px;}
+  td.num{font-variant-numeric:tabular-nums;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;
+         background:rgba(57,182,255,.14);color:var(--b);border:1px solid rgba(57,182,255,.3);}
+  .bar{height:8px;border-radius:4px;background:#16232f;overflow:hidden;}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--g),var(--b));}
+  .foot{color:var(--dim);font-size:11px;margin-top:12px;line-height:1.8;}
+  .err{color:var(--r);font-size:12px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>板材缺陷质量看板</h1>
+  <span class="badge" id="src">数据源加载中</span>
+  <span class="clock" id="clock"></span>
+</header>
+
+<div class="grid">
+  <div class="card"><div class="k">今日缺陷数</div><div class="v" id="k1">-</div></div>
+  <div class="card"><div class="k">涉及板数</div><div class="v" id="k2">-</div></div>
+  <div class="card"><div class="k">检测会话</div><div class="v" id="k3">-</div></div>
+  <div class="card"><div class="k">平均置信度</div><div class="v" id="k4">-</div></div>
+</div>
+
+<div class="two">
+  <div class="card">
+    <div class="k">缺陷类型分布（今日）</div>
+    <canvas id="cClass" height="230"></canvas>
+  </div>
+  <div class="card">
+    <div class="k">缺陷高发时段（近 7 天）</div>
+    <canvas id="cHour" height="230"></canvas>
+  </div>
+</div>
+
+<div class="two3">
+  <div class="card">
+    <div class="k">实时检测流水（最新 12 条）</div>
+    <table>
+      <thead><tr><th>时间</th><th>类别</th><th>置信度</th><th>尺寸(px)</th></tr></thead>
+      <tbody id="live"><tr><td colspan="4" class="err">加载中…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="k">AI 复核与自学习</div>
+    <div id="ai" class="foot">加载中…</div>
+  </div>
+</div>
+
+<div class="foot" id="foot"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (p) => (await fetch(p)).json();
+
+function fmtClock(){
+  const d = new Date();
+  $('#clock').textContent = d.toLocaleString('zh-CN', {hour12:false});
+}
+setInterval(fmtClock, 1000); fmtClock();
+
+function hiDPI(cv){
+  const r = devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.height;
+  if (cv.width !== w*r || cv.height !== h*r){ cv.width = w*r; cv.height = h*r; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(r,0,0,r,0,0);
+  ctx.clearRect(0,0,w,h);
+  return {ctx, w, h};
+}
+
+function drawBars(cv, items, key='count', label='class_cn', color='#3ddc97'){
+  const {ctx, w, h} = hiDPI(cv);
+  if (!items.length){ ctx.fillStyle='#7f95a9'; ctx.font='13px sans-serif'; ctx.fillText('暂无数据', 10, 24); return; }
+  const max = Math.max(...items.map(i=>i[key])) || 1;
+  const bh = Math.min(30, (h - 16) / items.length - 8);
+  items.forEach((it, i) => {
+    const y = i * (bh + 10) + 10;
+    const bw = (w - 96) * (it[key] / max);
+    ctx.fillStyle = '#16232f';
+    ctx.fillRect(90, y, w - 96, bh);
+    const g = ctx.createLinearGradient(90, 0, 90 + bw, 0);
+    g.addColorStop(0, color); g.addColorStop(1, '#39b6ff');
+    ctx.fillStyle = g;
+    ctx.fillRect(90, y, Math.max(bw, 2), bh);
+    ctx.fillStyle = '#cfe6ff'; ctx.font = '12px "Microsoft YaHei UI"'; ctx.textAlign='right';
+    ctx.fillText(it[label], 84, y + bh*0.72);
+    ctx.textAlign='left'; ctx.fillStyle='#e8f2fa';
+    ctx.fillText(it[key], Math.max(96, 90 + bw + 6), y + bh*0.72);
+  });
+}
+
+function drawLine(cv, buckets){
+  const {ctx, w, h} = hiDPI(cv);
+  const keys = Object.keys(buckets);
+  const vals = keys.map(k => buckets[k]);
+  const max = Math.max(...vals, 1);
+  const padL = 30, padB = 22, padT = 10;
+  const gw = w - padL - 8, gh = h - padB - padT;
+  // 网格
+  ctx.strokeStyle = '#16232f'; ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++){
+    const y = padT + gh*i/4;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+gw, y); ctx.stroke();
+    ctx.fillStyle='#5d7a8f'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(max*(1-i/4)), padL-4, y+3);
+  }
+  // 折线
+  const px = i => padL + gw * (i / (keys.length-1));
+  const py = v => padT + gh * (1 - v/max);
+  ctx.beginPath();
+  vals.forEach((v,i)=> i? ctx.lineTo(px(i), py(v)) : ctx.moveTo(px(i), py(v)));
+  ctx.strokeStyle = '#39b6ff'; ctx.lineWidth = 2; ctx.stroke();
+  // 面积
+  ctx.lineTo(px(vals.length-1), padT+gh);
+  ctx.lineTo(px(0), padT+gh);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, padT, 0, padT+gh);
+  g.addColorStop(0,'rgba(57,182,255,.32)'); g.addColorStop(1,'rgba(57,182,255,0)');
+  ctx.fillStyle = g; ctx.fill();
+  // 峰值点
+  const mi = vals.indexOf(max);
+  ctx.beginPath(); ctx.arc(px(mi), py(max), 4, 0, 7); ctx.fillStyle = '#ffc857'; ctx.fill();
+  // x 轴
+  ctx.fillStyle='#5d7a8f'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  keys.forEach((k,i)=>{ if(i%4===0) ctx.fillText(k, px(i), h-6); });
+  ctx.textAlign='left';
+  ctx.fillStyle='#ffc857'; ctx.font='11px "Microsoft YaHei UI"';
+  ctx.fillText(`高峰 ${keys[mi]}:00 · ${max} 条`, padL+4, padT+12);
+}
+
+async function refresh(){
+  try {
+    const [s, c, hh, live, ai] = await Promise.all([
+      api('/api/summary'), api('/api/classes?days=1'), api('/api/hourly?days=7'),
+      api('/api/live?limit=12'), api('/api/ai')
+    ]);
+    $('#src').textContent = `数据源：${s.source || '库'}`;
+    $('#k1').innerHTML = `${s.detections}<small>条</small>`;
+    $('#k2').innerHTML = `${s.boards}<small>块</small>`;
+    $('#k3').innerHTML = `${s.sessions}<small>个</small>`;
+    $('#k4').textContent = s.avg_conf ?? '-';
+
+    drawBars($('#cClass'), (c.items||[]).slice(0,6));
+    if (hh.buckets) drawLine($('#cHour'), hh.buckets);
+
+    const tb = $('#live');
+    tb.innerHTML = (live.items && live.items.length)
+      ? live.items.map(r => `<tr>
+          <td class="num">${(r.ts||'').slice(11)}</td>
+          <td>${r.class_cn||'-'}</td>
+          <td class="num">${(r.confidence??0).toFixed(3)}</td>
+          <td class="num">${r.w??'-'}×${r.h??'-'}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="err">暂无检测记录</td></tr>';
+
+    const st = ai.review_states || {};
+    const total = Object.values(st).reduce((a,b)=>a+b,0) || 1;
+    $('#ai').innerHTML = `
+      <div style="margin-bottom:6px">待人工复核　<b style="color:var(--y)">${ai.pending??'-'}</b> 条</div>
+      <div style="margin-bottom:10px">复核记录共 ${total} 条：
+        ${Object.entries(st).map(([k,v])=>`<span class="badge" style="margin-left:6px">${k} ${v}</span>`).join('')}
+      </div>
+      <div style="margin-bottom:6px">自学习样本池　<b>${ai.samples??'-'}</b> 条 · 训练轮次 <b>${ai.learning_runs??'-'}</b></div>
+      <div>当前权重　${ai.model? `<b>${ai.model.name}</b> <span class="badge">map50 ${ai.model.map50 ?? '-'}</span>` : '无'}</div>`;
+
+    $('#foot').textContent = '口径：detections 逐条计数；板数按 session 去重；置信度为模型输出原始值。刷新间隔 5s。';
+  } catch (e) {
+    $('#src').innerHTML = `<span class="err">接口异常：${e.message}</span>`;
+  }
+}
+refresh();
+setInterval(refresh, 5000);
+window.addEventListener('resize', ()=>refresh());
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>运维屏 · 模型性能</title>
+<style>
+  :root{--bg:#080e14;--panel:#0f1a24;--line:#1e2c3a;--txt:#e6f0f8;--dim:#7d93a8;
+        --g:#3ddc97;--b:#39b6ff;--r:#ff6b6b;--y:#ffc857;--v:#b088ff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei UI",system-ui,sans-serif;
+       font-size:12px;overflow:hidden;height:100vh;display:flex;flex-direction:column;gap:8px;padding:10px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .row{display:flex;align-items:center;gap:8px;}
+  .h{font-size:11px;letter-spacing:1.4px;color:var(--dim);font-weight:700;text-transform:uppercase;
+     display:flex;align-items:center;gap:8px;}
+  .h .tag{margin-left:auto;font-size:10px;letter-spacing:0;color:var(--dim);font-weight:400;text-transform:none;}
+  .big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+  .unit{font-size:12px;color:var(--dim);margin-left:2px;}
+  .bar{height:7px;border-radius:4px;background:#16232f;overflow:hidden;margin-top:6px;}
+  .bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#2f9e6f,#3ddc97);transition:.4s;}
+  .bar.mem>i{background:linear-gradient(90deg,#2c6fa8,#39b6ff);}
+  .kv{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:5px;}
+  .kv b{color:var(--txt);font-variant-numeric:tabular-nums;}
+  canvas{display:block;width:100%;}
+  .legend{display:flex;gap:12px;font-size:10.5px;color:var(--dim);margin-top:4px;}
+  .legend i{display:inline-block;width:9px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+  .jobline{font-size:12px;line-height:1.6;}
+  .jobline .st{font-weight:800;}
+  .log{font-family:Consolas,monospace;font-size:10px;color:#93a9bd;line-height:1.45;
+       max-height:78px;overflow:hidden;margin-top:6px;white-space:pre-wrap;word-break:break-all;}
+  .badge{font-size:10px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--dim);}
+  .badge.ok{color:var(--g);border-color:#264d3c;}
+  .badge.warn{color:var(--y);border-color:#5a4a1e;}
+  .badge.bad{color:var(--r);border-color:#5a2a2a;}
+  #foot{font-size:10px;color:#4d5f70;text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- GPU -->
+<div class="card">
+  <div class="h">GEAR · GPU <span class="tag" id="gpuAt">--:--:--</span></div>
+  <div class="row" style="margin-top:6px;">
+    <div><div class="big" id="util">0<span class="unit">%</span></div></div>
+    <div style="flex:1;">
+      <div class="kv"><span>显存</span><b id="mem">0 / 0 MB</b></div>
+      <div class="bar mem"><i id="membar"></i></div>
+      <div class="kv"><span>温度 <b id="temp">-</b>℃</span><span>功耗 <b id="power">-</b>W</span></div>
+    </div>
+  </div>
+  <canvas id="gpuChart" height="66"></canvas>
+  <div class="legend"><span><i style="background:var(--y)"></i>GPU 利用率</span>
+    <span><i style="background:var(--b)"></i>显存占比</span>
+    <span style="margin-left:auto" id="gpuSrc">nvidia-smi</span></div>
+</div>
+
+<!-- 模型性能趋势 -->
+<div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+  <div class="h">模型性能趋势 <span class="tag" id="trendTag">—</span></div>
+  <canvas id="mapChart" height="150" style="margin-top:6px;"></canvas>
+  <div class="legend">
+    <span><i style="background:var(--g)"></i>自学习 mAP50</span>
+    <span><i style="background:var(--v)"></i>mAP50-95</span>
+    <span><i style="background:var(--b)"></i>会话平均置信度</span>
+  </div>
+  <canvas id="confChart" height="64" style="margin-top:8px;"></canvas>
+  <div class="legend">
+    <span><i style="background:var(--b)"></i>sessions.avg_conf（滑动）</span>
+    <span style="margin-left:auto" id="confTag">—</span>
+  </div>
+</div>
+
+<!-- 当前作业 -->
+<div class="card">
+  <div class="h">当前作业 <span class="tag" id="jobTag">空闲</span></div>
+  <div class="jobline" id="jobLine" style="margin-top:5px;">现在没有作业，GPU 空着。</div>
+  <div class="bar"><i id="jobbar"></i></div>
+  <div class="log" id="jobLog"></div>
+</div>
+
+<div id="foot">数据：wood_inspect.db（只读）· nvidia-smi · ops_jobs/progress.jsonl</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const gHist = [], cHist = [];
+const MAXY = 100;
+
+function scaleCanvas(cv){
+  const r = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.height;
+  cv.width = w * r; cv.height = h * r;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(r,0,0,r,0,0);
+  return {ctx, w, h};
+}
+
+function line(cv, series, opts){
+  const {ctx, w, h} = scaleCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  // 网格
+  ctx.strokeStyle = '#16232f'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++){
+    const y = (h-10) * i/4 + 5;
+    ctx.beginPath(); ctx.moveTo(24, y); ctx.lineTo(w-4, y); ctx.stroke();
+  }
+  if (!series.length) {
+    ctx.fillStyle = '#4d5f70'; ctx.font = '10px sans-serif';
+    ctx.fillText('暂无数据', 30, h/2); return;
+  }
+  const pad = 24;
+  const allV = series.flatMap(s => s.data.map(p => p.v)).filter(v => v != null);
+  const ymin = opts.ymin != null ? opts.ymin : Math.min(...allV);
+  const ymax = opts.ymax != null ? opts.ymax : Math.max(...allV, ymin + 0.001);
+  const span = Math.max(1e-6, ymax - ymin);
+  const X = i => pad + (w - pad - 6) * (series[0].data.length <= 1 ? 0.5 : i/(series[0].data.length-1));
+  const Y = v => h - 8 - (h - 16) * ((v - ymin)/span);
+
+  // y 轴刻度
+  ctx.fillStyle = '#4d5f70'; ctx.font = '9px Consolas,monospace';
+  ctx.fillText(ymax.toFixed(opts.dec ?? 2), 1, 10);
+  ctx.fillText(ymin.toFixed(opts.dec ?? 2), 1, h-6);
+
+  series.forEach(s => {
+    ctx.beginPath(); ctx.strokeStyle = s.color; ctx.lineWidth = 1.8;
+    let started = false;
+    s.data.forEach((p, i) => {
+      if (p.v == null) return;
+      const x = X(i), y = Y(p.v);
+      if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    if (s.fill){
+      ctx.lineTo(X(s.data.length-1), h-8); ctx.lineTo(X(0), h-8); ctx.closePath();
+      const g = ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, s.fill); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fill();
+    }
+    // 末点
+    const last = [...s.data].reverse().find(p => p.v != null);
+    if (last){
+      const i = s.data.lastIndexOf(last);
+      ctx.beginPath(); ctx.arc(X(i), Y(last.v), 3, 0, 7); ctx.fillStyle = s.color; ctx.fill();
+    }
+  });
+}
+
+function renderGpu(g){
+  $('#util').innerHTML = `${g.util ?? 0}<span class="unit">%</span>`;
+  $('#util').style.color = (g.util > 60) ? 'var(--y)' : (g.util > 5 ? 'var(--g)' : 'var(--dim)');
+  $('#mem').textContent = `${g.mem_used ?? 0} / ${g.mem_total ?? 0} MB`;
+  $('#membar').style.width = (g.mem_pct ?? 0) + '%';
+  $('#temp').textContent = g.temp ?? '-';
+  $('#power').textContent = g.power ?? '-';
+  $('#gpuAt').textContent = g.at || '--:--:--';
+  gHist.push({u: g.util ?? 0, m: g.mem_pct ?? 0});
+  while (gHist.length > 90) gHist.shift();
+  line($('#gpuChart'),
+    [{data: gHist.map(p => ({v: p.u})), color: '#ffc857'},
+     {data: gHist.map(p => ({v: p.m})), color: '#39b6ff'}],
+    {ymin: 0, ymax: MAXY, dec: 0});
+}
+
+function renderTrend(t){
+  const L0 = t.learning || [];
+  // 没过闸/评估失败的轮次 map50 会是 0，画进趋势线只会把线拽到底，单独计数即可
+  const L = L0.filter(x => x.map50 != null && x.map50 > 0);
+  const rejected = L0.filter(x => x.status && x.status !== 'ok').length;
+  const S = (t.sessions || []);
+  $('#trendTag').textContent = L.length
+    ? `${L.length} 轮有效 · 最新 mAP50 ${L[L.length-1].map50}${rejected ? ` · ${rejected} 轮未过闸` : ''}`
+    : '无自学习记录';
+  line($('#mapChart'),
+    [{data: L.map(x => ({v: x.map50})), color: '#3ddc97', fill: 'rgba(61,220,151,.22)'},
+     {data: L.map(x => ({v: x.map50_95})), color: '#b088ff'}],
+    {dec: 2});
+
+  const cs = S.map(x => ({v: x.avg_conf}));
+  $('#confTag').textContent = cs.length
+    ? `最新 ${cs[cs.length-1].v} · ${S[S.length-1].at || ''}`
+    : '无会话数据';
+  line($('#confChart'), [{data: cs, color: '#39b6ff', fill: 'rgba(57,182,255,.18)'}],
+       {dec: 2});
+}
+
+function renderJob(j){
+  const tag = $('#jobTag'), bar = $('#jobbar'), log = $('#jobLog');
+  if (!j || j.state === 'idle'){
+    tag.className = 'tag'; tag.textContent = '空闲';
+    $('#jobLine').textContent = '现在没有作业，GPU 空着。说一句「让 GPU 跑一下训练」就会起来。';
+    bar.style.width = '0%'; log.textContent = ''; return;
+  }
+  const p = j.params || {};
+  const prog = j.epochs ? Math.min(100, Math.round((j.epoch || 0) / j.epochs * 100)) : 0;
+  const m = j.metrics || {};
+  const mb = Object.entries(m).map(([k,v]) => `${k}=${v}`).join('  ');
+  const col = j.state === 'running' ? 'var(--y)' : (j.state === 'done' ? 'var(--g)' : 'var(--r)');
+  tag.className = 'tag ' + (j.state === 'running' ? 'warn' : (j.state === 'done' ? 'ok' : 'bad'));
+  tag.textContent = j.state === 'running' ? '运行中' : (j.state === 'done' ? '已完成' : '失败');
+  $('#jobLine').innerHTML =
+    `<span class="st" style="color:${col}">${j.label || j.mode}</span> · ` +
+    `${j.epoch || 0}/${j.epochs || '-'} 轮 · ${j.elapsed ?? 0}s · ` +
+    `imgsz ${p.imgsz ?? '-'} · fraction ${p.fraction ?? '-'}` +
+    (mb ? `<br><span style="color:var(--dim)">${mb}</span>` : '') +
+    (j.error ? `<br><span style="color:var(--r)">${j.error}</span>` : '');
+  bar.style.width = (j.state === 'done' ? 100 : prog) + '%';
+  bar.style.background = j.state === 'failed' ? 'var(--r)' : '';
+  log.textContent = (j.log_tail || []).slice(-4).join('\n');
+}
+
+let TREND_EVERY = 0;
+async function tick(){
+  try {
+    const r = await fetch('/api/ops');
+    const d = (await r.json()).data || {};
+    renderGpu(d.gpu || {});
+    renderJob(d.job || {});
+    if (++TREND_EVERY % 5 === 1) renderTrend(d.trend || {});   // 趋势是库里的，10s 一次足够
+  } catch (e) {
+    $('#foot').textContent = '主服务没起来：' + e.message;
+  }
+}
+tick(); setInterval(tick, 2000);
+window.addEventListener('resize', () => { TREND_EVERY = 0; tick(); });
+</script>
+</body>
+</html>

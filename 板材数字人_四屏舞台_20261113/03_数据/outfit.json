@@ -1,0 +1,49 @@
+{
+  "source_usdz": "F:\\微信聊天\\xwechat_files\\wxid_y7652tbbf4d122_957b\\temp\\RWTemp\\2026-11\\9e20f478899dc29eb19741386f9343c8\\未命名对象 3.usdz",
+  "atlas_entry": "0/baked_mesh_a10d24ec_tex0.png",
+  "atlas_size": [
+    2048,
+    2048
+  ],
+  "jacket_navy_median_rgb": [
+    0.1137,
+    0.1333,
+    0.2157
+  ],
+  "jacket_navy_hex": "#1d2237",
+  "patch_box": [
+    1088,
+    1120,
+    128
+  ],
+  "grain_std": 0.1076,
+  "note": "商品图 352×423，抠白底→切掉裤子→按小星西装上衣的范围（肩线到胯线）拉伸贴上，合成时用商品图明暗归一 + 小星自己的褶皱调制。",
+  "source_image": "C:\\Users\\Administrator\\.dsh\\attachments\\v1\\objects\\ec\\ec803afdea0d5b00cf1fc95d22c42ad53fcfdb673ccee27a01659b2294028415",
+  "plate": "assets/jacket_plate.png",
+  "navy_rgb": [
+    0.0941,
+    0.1216,
+    0.2
+  ],
+  "grey_rgb": [
+    0.6275,
+    0.6275,
+    0.6745
+  ],
+  "align": {
+    "shoulder_y": 288,
+    "hip_y": 760,
+    "y0": 43,
+    "y1": 1316
+  },
+  "garment_source": "C:\\Users\\Administrator\\Desktop\\数字人\\板材数字人_四屏舞台_20261113\\01_人物素材_复用\\工装夹克_商品图.jpg",
+  "plate_box": [
+    213,
+    215,
+    564,
+    758
+  ],
+  "fit_plate": "assets/jacket_fit.png",
+  "exposure": 0.82,
+  "maps_plate": "assets/jacket_maps.png"
+}

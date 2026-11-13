@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小星 · 五屏（检测系统 / 大屏 / 复核中枢 / 自学习 / 模型性能）</title>
+<style>
+  :root{--bg:#0a0b0d;--panel:#111418;--line:#232830;--txt:#e8eef5;--dim:#8b97a6;
+        --amber:#d98a3d;--g:#3ddc97;--r:#ff6b6b;--y:#ffc857;--b:#39b6ff;--v:#b088ff;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+            font-family:"Microsoft YaHei UI",system-ui,sans-serif;}
+  #fitwrap{position:fixed;inset:0;overflow:hidden;background:#0a0b0d;
+            display:flex;align-items:center;justify-content:center;}
+  .grid{display:grid;grid-template-columns:1.08fr 1fr 1.08fr;grid-template-rows:1fr 1fr 208px;
+        gap:8px;padding:8px;
+        width:1600px;height:900px;flex:0 0 auto;transform-origin:center center;}
+  .cell{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        overflow:hidden;min-height:0;display:flex;flex-direction:column;transition:.15s;}
+  .cell>header{display:flex;align-items:center;gap:7px;padding:5px 9px;border-bottom:1px solid var(--line);
+               font-size:11px;color:var(--dim);letter-spacing:.5px;flex:0 0 auto;cursor:pointer;}
+  .cell>header b{color:var(--txt);font-weight:700;letter-spacing:0;}
+  .cell>header .dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 7px currentColor;}
+  .cell>header .dot.off{background:var(--r);box-shadow:0 0 7px var(--r);}
+  .cell>header .tag{margin-left:auto;font-size:9.5px;color:var(--dim);letter-spacing:0;}
+  .body{flex:1;min-height:0;position:relative;overflow:hidden;}
+  .body img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;}
+  .body iframe{position:absolute;top:0;left:0;border:0;display:block;background:#000;
+               transform-origin:top left;}
+  /* 点击放大：占满窗口（再点一次还原） */
+  .cell.big{position:fixed;inset:8px;z-index:99;box-shadow:0 0 0 2px var(--amber),0 24px 60px rgba(0,0,0,.7);}
+  /* 中间：小星 */
+  #c0{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:center;
+      justify-content:flex-end;background:radial-gradient(circle at 50% 40%,#191817 0%,#0a0b0d 66%);}
+  #c0 .glow{position:absolute;left:50%;top:44%;width:min(60vh,520px);height:min(60vh,520px);
+            transform:translate(-50%,-50%);filter:blur(10px);pointer-events:none;
+            background:radial-gradient(circle,rgba(217,138,61,.20),rgba(217,138,61,.04) 48%,transparent 72%);}
+  #avatar{position:relative;height:calc(100% - 112px);width:auto;aspect-ratio:400/700;max-width:100%;}
+  .sub{width:calc(100% - 14px);margin:0 0 7px;background:rgba(14,16,20,.94);border:1px solid var(--line);
+       border-radius:11px;padding:7px 11px;}
+  .sub .who{font-size:10px;letter-spacing:1.4px;color:var(--amber);font-weight:800;}
+  .sub .who em{font-style:normal;color:var(--dim);letter-spacing:0;font-weight:400;margin-left:6px;}
+  .sub p{font-size:12.5px;line-height:1.55;margin-top:3px;min-height:20px;}
+  .sub .hear{margin-top:3px;font-size:10px;color:var(--b);min-height:13px;}
+  .bar{position:absolute;top:6px;left:6px;right:6px;display:flex;gap:6px;align-items:center;
+       padding:3px 7px;font-size:10px;color:var(--dim);z-index:9;}
+  .pill{border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:#0f1216;}
+  .pill b{color:var(--txt);}
+  .lvl{width:42px;height:6px;border-radius:3px;background:#171b21;overflow:hidden;display:inline-block;
+       vertical-align:middle;border:1px solid var(--line);}
+  .lvl>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3ddc97,#ffc857);}
+  .bar .right{margin-left:auto;display:flex;gap:5px;}
+  button{font-family:inherit;font-size:10px;padding:3px 8px;border-radius:7px;cursor:pointer;
+         background:#171c23;color:#cfe0f0;border:1px solid var(--line);}
+  button.on{background:linear-gradient(180deg,#2f9e6f,#1d6b4a);border-color:var(--g);color:#eafff5;}
+  /* ④ 自学习（自己画，保证整块放得下） */
+  #learn{padding:7px 10px;height:100%;display:flex;flex-direction:column;gap:5px;}
+  .steps{display:flex;gap:4px;align-items:stretch;}
+  .step{flex:1;background:#0e1216;border:1px solid var(--line);border-radius:9px;padding:5px 6px;text-align:center;}
+  .step .n{font-size:9.5px;color:var(--dim);}
+  .step .v{font-size:12.5px;font-weight:800;margin-top:2px;color:var(--txt);font-variant-numeric:tabular-nums;}
+  .step.on{border-color:#3a5a48;box-shadow:0 0 0 1px rgba(61,220,151,.25) inset;}
+  .step.on .v{color:var(--g);}
+  #learnChart{flex:1;min-height:0;width:100%;}
+  .cap{font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* ⑤ */
+  .five{grid-column:1 / span 3;display:grid;grid-template-columns:152px 1fr 1fr;gap:12px;
+        padding:6px 14px 12px;overflow:hidden;}
+  .g{display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;}
+  #gpuSpark{height:26px;width:100%;}
+  .mini{font-size:9px;color:#4d5f70;margin-top:1px;}
+  .big{font-size:19px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+  .sub2{font-size:10px;color:var(--dim);margin-top:2px;line-height:1.35;}
+  .barh{height:6px;border-radius:3px;background:#171b21;overflow:hidden;margin-top:5px;border:1px solid var(--line);}
+  .barh>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#2f9e6f,#3ddc97);transition:.3s;}
+  canvas{display:block;width:100%;height:100%;min-height:0;}
+  .live{font-size:9px;color:#5f7183;letter-spacing:0;margin-left:6px;}
+  .live i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--g);margin-right:4px;animation:blink 1.4s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .zoomtip{position:absolute;right:8px;bottom:6px;font-size:9px;color:#46525f;z-index:5;}
+</style>
+</head>
+<body>
+<div id="fitwrap"><div id="fit" class="grid">
+
+  <!-- ① 检测系统本体 -->
+  <section class="cell" id="c1" data-zoom="1">
+    <header><span class="dot" id="d1"></span><b>检测系统</b><span class="live" id="live1"><i></i>LIVE</span><span class="tag" id="t1">桌面端抓帧</span></header>
+    <div class="body"><img id="win" alt="桌面端实时抓帧"></div>
+  </section>
+
+  <!-- 中间：小星 -->
+  <section class="cell" id="c0">
+    <div class="bar">
+      <span class="pill" id="pMic">麦克风 <b>未激活</b></span>
+      <span class="lvl"><i id="lvl"></i></span>
+      <span class="pill" id="pGpu">GPU <b>-</b></span>
+      <div class="right">
+        <button id="btnListen" class="on">常听: 开</button>
+        <button id="btnSay">🎤 按住说话</button>
+        <button id="btnMute">静音</button>
+      </div>
+    </div>
+    <div class="glow"></div>
+    <canvas id="avatar"></canvas>
+    <div class="sub">
+      <div class="who">小星<em>5号选手 · 板材检测项目数字工程师</em></div>
+      <p id="subText">我在听，直接说话就行；也可以从控制台点台词。</p>
+      <div class="hear" id="hear"></div>
+    </div>
+  </section>
+
+  <!-- ③ 六专家复核 -->
+  <section class="cell" id="c3" data-zoom="1">
+    <header><span class="dot" id="d3"></span><b>六专家复核</b><span class="live" id="live3"><i></i>LIVE</span><span class="tag">8999 本体</span></header>
+    <div class="body"><iframe id="f3" src="http://127.0.0.1:8999/" title="对话中枢" style="width:1600px;height:1000px"></iframe></div>
+  </section>
+
+  <!-- ② 大屏 -->
+  <section class="cell" id="c2" data-zoom="1">
+    <header><span class="dot" id="d2"></span><b>大屏可视化</b><span class="live" id="live2"><i></i>LIVE</span><span class="tag">8770 本体</span></header>
+    <div class="body"><iframe id="f2" src="http://127.0.0.1:8770/" title="大屏" style="width:1920px;height:1080px"></iframe></div>
+  </section>
+
+  <!-- ④ 自学习闭环 -->
+  <section class="cell" id="c4" data-zoom="1">
+    <header><span class="dot" id="d4"></span><b>模型自学习闭环</b><span class="live" id="live4"><i></i>LIVE</span><span class="tag" id="t4">样本池 → 闸门 → 训练 → 评估 → 上线</span></header>
+    <div class="body">
+      <div id="learn">
+        <div class="steps" id="steps"></div>
+        <canvas id="learnChart"></canvas>
+        <div class="cap" id="learnSrc">来源：—</div>
+        <div class="cap" id="learnCls">类别：—</div>
+        <div class="cap" id="learnCap">读取中…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 模型性能 + GPU -->
+  <section class="cell five" id="c5" style="grid-column:1 / span 3;">
+    <header style="position:absolute;top:4px;left:12px;border:0;padding:0;">
+      <span class="dot" id="d5"></span><b>模型性能 · GPU</b><span class="live" id="live5"><i></i>LIVE</span>
+    </header>
+    <div class="g" style="padding-top:14px;">
+      <div class="big" id="util">0<span style="font-size:12px;color:var(--dim)">%</span></div>
+      <div class="sub2" id="gpuSub">GPU 待采样</div>
+      <div class="barh"><i id="membar"></i></div>
+      <canvas id="gpuSpark"></canvas>
+      <div class="sub2" id="jobLine">当前作业：空闲</div>
+    </div>
+    <div class="g" style="padding-top:14px;">
+      <div class="cap">模型性能趋势 · 自学习每轮 mAP50（库：ai_learning_runs）</div>
+      <canvas id="mapChart"></canvas>
+    </div>
+    <div class="g" style="padding-top:14px;">
+      <div class="cap">会话平均置信度 · 产线上的真实表现（库：sessions.avg_conf）</div>
+      <canvas id="confChart"></canvas>
+    </div>
+  </section>
+</div></div>
+
+<script src="02_四屏舞台/js/character.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+// ══════════ 小星
+const rig = new CharacterRig($('#avatar'), {
+  idleSrc : '01_人物素材_复用/H3/idle_rgb_alpha.mp4',
+  talkSrc : '01_人物素材_复用/H3/talk_rgb_alpha.mp4',
+  stillSrc: '01_人物素材_复用/pose_still_rgba.png',
+  forceStill: new URLSearchParams(location.search).get('still') === '1'
+});
+function speak(on){ try { rig.setSpeaking(!!on); } catch(e){} }
+
+// ══════════ 字幕 / 状态
+function setMic(t, cls){
+  $('#pMic').innerHTML = '麦克风 <b>' + t + '</b>';
+  $('#pMic').querySelector('b').style.color =
+    cls === 'live' ? 'var(--g)' : (cls === 'bad' ? 'var(--r)' : 'var(--txt)');
+}
+function say(t){ $('#subText').textContent = t; }
+function hear(t){ $('#hear').textContent = t ? '（听到）' + t : ''; }
+
+// ══════════ 播报
+let AUDIO = null, MUTED = false, PLAYING = false;
+function playReply(url){
+  if (!url || MUTED) return Promise.resolve();
+  return new Promise(res => {
+    try {
+      if (AUDIO) { try { AUDIO.pause(); } catch(e){} }
+      AUDIO = new Audio(url);
+      PLAYING = true; speak(true);
+      const fin = () => { if (!PLAYING) return; PLAYING = false; speak(false); res(); };
+      AUDIO.onended = fin; AUDIO.onerror = fin;
+      AUDIO.play().catch(fin);
+      setTimeout(fin, 15000);
+    } catch(e){ res(); }
+  });
+}
+$('#btnMute').onclick = () => {
+  MUTED = !MUTED;
+  $('#btnMute').textContent = MUTED ? '开声音' : '静音';
+  $('#btnMute').classList.toggle('on', !MUTED);
+  if (MUTED && AUDIO) { try { AUDIO.pause(); } catch(e){} PLAYING = false; speak(false); }
+};
+
+// ══════════ 麦克风（常听）
+const MIC = {ctx:null, stream:null, node:null, sr:0, active:false, manual:false,
+             buf:[], voiced:0, speech:0, speaking:false, silent:0, floor:0.008,
+             sending:false, armed:false, errShown:false};
+const MIN_SPEECH = 0.5;
+let ALWAYS = true;
+
+async function ensureCtx(){
+  if (MIC.ctx) return true;
+  if (!navigator.mediaDevices){ setMic('不支持', 'bad'); return false; }
+  try {
+    MIC.stream = await navigator.mediaDevices.getUserMedia({
+      audio:{channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+  } catch(e){
+    setMic('被拒/占用', 'bad');
+    if (!MIC.errShown){ MIC.errShown = true;
+      say('麦克风打不开（' + e.name + '）。看地址栏左侧权限，或是不是别的程序占着麦克风。'); }
+    return false;
+  }
+  MIC.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  MIC.sr = MIC.ctx.sampleRate;
+  const src = MIC.ctx.createMediaStreamSource(MIC.stream);
+  MIC.node = MIC.ctx.createScriptProcessor(4096, 1, 1);
+  MIC.node.onaudioprocess = onAudio;
+  src.connect(MIC.node); MIC.node.connect(MIC.ctx.destination);
+  return true;
+}
+
+function onAudio(e){
+  const d = e.inputBuffer.getChannelData(0);
+  let s = 0; for (let i = 0; i < d.length; i++) s += d[i]*d[i];
+  const rms = Math.sqrt(s / d.length);
+  $('#lvl').style.width = Math.min(100, Math.round(rms * 900)) + '%';
+  if (MIC.sending || PLAYING || !MIC.active) return;
+  if (!MIC.speaking) MIC.floor = MIC.floor * 0.95 + rms * 0.05;
+  const TH = Math.max(0.010, MIC.floor * 2.2);
+  if (!MIC.speaking){
+    if (MIC.manual) MIC.speaking = true;
+    else if (rms > TH){ MIC.speaking = true; MIC.silent = 0; MIC.voiced = 0; setMic('听到你在说…','live'); }
+    else return;
+  }
+  MIC.buf.push(new Float32Array(d));
+  MIC.voiced += d.length / MIC.sr;
+  if (rms > TH) MIC.speech += d.length / MIC.sr;
+  if (MIC.manual) return;
+  if (rms > TH) MIC.silent = 0;
+  else { MIC.silent += d.length / MIC.sr; if (MIC.silent > 0.8) return endUtterance(); }
+  if (MIC.voiced > 15) endUtterance();
+}
+
+function wav16(chunks, sr){
+  let n = 0; chunks.forEach(c => n += c.length);
+  const flat = new Float32Array(n); let o = 0;
+  chunks.forEach(c => { flat.set(c, o); o += c.length; });
+  const target = 16000, ratio = sr / target, m = Math.floor(n / ratio);
+  const out = new Int16Array(m);
+  for (let i = 0; i < m; i++){
+    const x = i * ratio, i0 = Math.floor(x), i1 = Math.min(n-1, i0+1);
+    const v = flat[i0] + (flat[i1] - flat[i0]) * (x - i0);
+    out[i] = Math.max(-32768, Math.min(32767, v * 32767));
+  }
+  const buf = new ArrayBuffer(44 + out.length*2), dv = new DataView(buf);
+  const ws = (p, s2) => { for (let i = 0; i < s2.length; i++) dv.setUint8(p+i, s2.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4, 36 + out.length*2, true); ws(8,'WAVE');
+  ws(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,target,true); dv.setUint32(28,target*2,true); dv.setUint16(32,2,true);
+  dv.setUint16(34,16,true); ws(36,'data'); dv.setUint32(40, out.length*2, true);
+  new Int16Array(buf, 44).set(out);
+  return buf;
+}
+
+function captureOn(){
+  if (MIC.active) return;
+  MIC.active = true; MIC.speaking = false; MIC.silent = 0; MIC.voiced = 0; MIC.speech = 0; MIC.buf = [];
+  setMic(ALWAYS ? '常听中 · 直接说' : '已就绪', 'live');
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+}
+function captureOff(t){ MIC.active = false; MIC.speaking = false; if (t) setMic(t, ''); }
+
+async function endUtterance(){
+  const chunks = MIC.buf; MIC.buf = [];
+  const speech = MIC.speech;
+  MIC.voiced = 0; MIC.speech = 0; MIC.speaking = false; MIC.silent = 0;
+  captureOff('处理中…');
+  if (speech < MIN_SPEECH || !chunks.length){ if (ALWAYS) captureOn(); return; }
+  MIC.sending = true;
+  say('…');
+  try {
+    const r = await fetch('/api/voice', {method:'POST',
+      headers:{'Content-Type':'application/octet-stream'}, body: wav16(chunks, MIC.sr)});
+    const j = await r.json();
+    if (j.ok && j.silent){ hear(''); say('我在听，直接说话就行。'); }
+    else if (j.ok){
+      hear(j.heard || '');
+      const d = j.data || {};
+      say(d.say || j.say || '');
+      await playReply(j.audio || '');
+    } else say('语音这条路没通：' + (j.error || ''));
+  } catch(e){ say('语音接口异常：' + e.message); }
+  MIC.sending = false;
+  if (ALWAYS) captureOn();
+  refreshOps();
+}
+
+async function arm(){ if (!(await ensureCtx())) return; MIC.armed = true; if (ALWAYS) captureOn(); }
+async function pttDown(e){ e?.preventDefault?.(); if (!(await ensureCtx())) return;
+  MIC.manual = true; MIC.buf = []; MIC.voiced = 0; MIC.speech = 1; MIC.speaking = true; MIC.silent = 0;
+  captureOn(); setMic('录音中…松手发送','live'); $('#btnSay').textContent = '🎤 松开发送'; }
+function pttUp(e){ e?.preventDefault?.(); if (!MIC.manual) return;
+  MIC.manual = false; $('#btnSay').textContent = '🎤 按住说话'; endUtterance(); }
+$('#btnSay').addEventListener('mousedown', pttDown);
+$('#btnSay').addEventListener('mouseup', pttUp);
+$('#btnSay').addEventListener('touchstart', pttDown);
+$('#btnSay').addEventListener('touchend', pttUp);
+$('#btnListen').onclick = async () => {
+  ALWAYS = !ALWAYS;
+  $('#btnListen').textContent = '常听: ' + (ALWAYS ? '开' : '关');
+  $('#btnListen').classList.toggle('on', ALWAYS);
+  if (ALWAYS){ if (await ensureCtx()){ captureOn(); say('常听打开了，你直接说话就行。'); } }
+  else { captureOff('常听已关'); say('常听关掉了。'); }
+};
+window.addEventListener('pointerdown', async () => { if (!MIC.armed) { await arm(); if (ALWAYS) say('我在听，直接说话就行。'); } });
+setTimeout(() => { if (!MIC.armed) arm().catch(()=>{}); }, 600);
+setInterval(() => {
+  if (!ALWAYS || !MIC.armed || MIC.sending || PLAYING || MIC.manual) return;
+  if (MIC.ctx && MIC.ctx.state === 'suspended') MIC.ctx.resume();
+  if (!MIC.active) captureOn();
+}, 5000);
+
+// ══════════ iframe 等比缩放：整块屏都看得见，不裁
+const DESIGN = {f2: [1920, 1080], f3: [1600, 1000]};
+function fitFrame(f){
+  const [W, H] = DESIGN[f.id] || [1600, 1000];
+  const box = f.parentElement;
+  const bw = box.clientWidth, bh = box.clientHeight;
+  if (!bw || !bh) return;
+  const k = Math.min(bw / W, bh / H);
+  // 关键：宽高必须保持设计尺寸不变，否则里面的 Vue 应用会按新尺寸重算自己的缩放 →
+  // 外面缩一次、里面再缩一次，就成了角落里的一张小图。
+  if (f.style.width !== W + 'px') f.style.width = W + 'px';
+  if (f.style.height !== H + 'px') f.style.height = H + 'px';
+  f.style.transform = 'scale(' + k + ')';
+  f.style.left = Math.round((bw - W * k) / 2) + 'px';
+  f.style.top = Math.round((bh - H * k) / 2) + 'px';
+}
+const FIT_LAST = {};
+function fitAll(force){
+  ['f2', 'f3'].forEach(id => {
+    const f = document.getElementById(id);
+    if (!f) return;
+    const box = f.parentElement;
+    const sig = box.clientWidth + 'x' + box.clientHeight;
+    if (!force && FIT_LAST[id] === sig) return;   // 尺寸没变就不重排，免得画面闪
+    FIT_LAST[id] = sig;
+    fitFrame(f);
+  });
+}
+window.addEventListener('resize', () => setTimeout(fitAll, 60));
+new ResizeObserver(() => fitAll()).observe(document.body);
+
+['f2','f3'].forEach(fid => {
+  const f = document.getElementById(fid);
+  f.addEventListener('load', () => beat(fid === 'f2' ? 'live2' : 'live3'));
+});
+setInterval(() => { beat('live2'); beat('live3'); }, 5000);
+
+// ══════════ 点击放大 / 还原
+$$('.cell[data-zoom]').forEach(cell => {
+  cell.querySelector('header').addEventListener('click', e => {
+    const on = cell.classList.contains('big');
+    $$('.cell.big').forEach(c => c.classList.remove('big'));
+    if (!on) cell.classList.add('big');
+    setTimeout(() => { fitAll(true); refreshLearned(); }, 80);
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ $$('.cell.big').forEach(c => c.classList.remove('big')); setTimeout(() => fitAll(true), 80); }
+});
+
+// ══════════ 整体适配窗口（保证任何窗口下都完整可见）
+function fitStage(){
+  const box = document.getElementById('fit');
+  if (!box) return;
+  const W = 1600, H = 900;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const k = Math.min(vw / W, vh / H, 1.35);
+  box.style.transform = 'scale(' + k.toFixed(4) + ')';
+  document.documentElement.style.setProperty('--fitk', k);
+}
+fitStage();
+window.addEventListener('resize', () => { fitStage(); setTimeout(fitAll, 60); });
+document.addEventListener('fullscreenchange', () => { fitStage(); setTimeout(fitAll, 80); });
+
+// ══════════ 心跳
+function beat(id, extra){
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = '<i></i>LIVE ' + new Date().toLocaleTimeString('zh-CN',{hour12:false}) + (extra||'');
+}
+
+// ══════════ ① 桌面端实时抓帧
+const PRE = new Image();
+let winT0 = performance.now();
+PRE.onload = () => {
+  $('#win').src = PRE.src;
+  winT0 = performance.now();
+  beat('live1');
+};
+function tickWin(){
+  // 预加载下一帧再换，500ms 也不闪
+  PRE.src = 'http://127.0.0.1:8790/api/win/desktop.jpg?t=' + Date.now();
+}
+setInterval(tickWin, 500); tickWin();
+setInterval(() => fitAll(false), 1000);
+
+// ══════════ ④ 自学习闭环（自绘，保证整块放得下）
+const STEP_DEF = [
+  ['样本池', d => (d.samples ?? 0) + ' 条'],
+  ['样本闸门', d => '≥ ' + ((d.gate && d.gate.min_samples) || 30)],
+  ['增量训练', d => ((d.runs && d.runs.length) ? d.runs[d.runs.length-1].epochs || 30 : 30) + ' epoch'],
+  ['评估', d => '基线+' + ((d.gate && d.gate.delta) || 0.005)],
+  ['上线/回滚', d => d.current ? 'current' : '—'],
+];
+let LEARN_DATA = null;
+
+function drawLearnChart(){
+  const cv = $('#learnChart');
+  const runs = ((LEARN_DATA && LEARN_DATA.runs) || []).slice(-14);
+  const r = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 240, h = cv.clientHeight || 60;
+  cv.width = w * r; cv.height = h * r;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(r,0,0,r,0,0); ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle = '#1b2028';
+  for (let i = 0; i <= 2; i++){ const y = (h-4)*i/2+2; ctx.beginPath(); ctx.moveTo(24,y); ctx.lineTo(w-2,y); ctx.stroke(); }
+  const vals = runs.map(x => x.map50).filter(v => v != null && v > 0);
+  if (vals.length < 2){ ctx.fillStyle='#4d5f70'; ctx.font='10px sans-serif';
+    ctx.fillText('有效轮次不足（过闸的轮次才计入）',30,h/2); return; }
+  const lo0 = Math.min(...vals), hi0 = Math.max(...vals);
+  const flat = (hi0 - lo0) < 0.01;              // 各轮指标持平时，画中线，别贴着底边
+  const lo = flat ? lo0 - 0.01 : lo0, hi = flat ? hi0 + 0.01 : hi0;
+  const span = Math.max(1e-6, hi-lo);
+  const X = i => 24 + (w-28) * i/(vals.length-1);
+  const Y = v => h-3 - (h-8) * ((v-lo)/span);
+  ctx.beginPath(); ctx.strokeStyle = '#3ddc97'; ctx.lineWidth = 1.6;
+  vals.forEach((v,i) => { const x=X(i), y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.stroke();
+  ctx.fillStyle = '#4d5f70'; ctx.font = '9px Consolas,monospace';
+  ctx.fillText(hi.toFixed(2), 0, 8); ctx.fillText(lo.toFixed(2), 0, h-2);
+  ctx.fillStyle = '#3ddc97'; ctx.fillText(vals[vals.length-1].toFixed(3), w-38, 8);
+}
+
+function refreshLearned(){
+  const d = LEARN_DATA;
+  if (!d) return;
+  $('#steps').innerHTML = STEP_DEF.map(([n, f], i) =>
+    `<div class="step ${i === 4 ? 'on' : ''}"><div class="n">${n}</div><div class="v">${f(d)}</div></div>`).join('');
+  const runs = (d.runs || []);
+  $('#learnSrc').textContent = '来源：' + ((d.by_source || []).map(x => x.src + ' ' + x.n).join(' · ') || '—');
+  $('#learnCls').textContent = '类别：' + ((d.by_class || []).map(x => (x.cls || x.cn || x.name) + ' ' + x.n).join(' · ') || '—');
+  $('#learnCap').textContent =
+    `样本池 ${d.samples ?? 0} 条（未用 ${d.unused ?? 0}）· 已跑 ${runs.length} 轮` +
+    (runs.length ? ` · run#${runs[0].id}→#${runs[runs.length-1].id}` : '') +
+    ` · 来源 ${(d.by_source || []).map(s => s.src + ' ' + s.n).join(' / ') || '—'}`;
+  drawLearnChart();
+}
+
+async function refreshStage(){
+  let data = null;
+  try {
+    const j = await (await fetch('/api/stage', {cache:'no-store'})).json();
+    data = j && j.data;
+  } catch(e){}
+  if (!data && window.__STAGE_SNAPSHOT__) data = window.__STAGE_SNAPSHOT__;
+  if (!data){ $('#learnCap').textContent = '8790 未启动，取不到自学习数据'; return; }
+  LEARN_DATA = data.selflearn;
+  $('#t4').textContent = '样本池 ' + (data.selflearn.samples ?? '—') + ' · 已跑 ' + ((data.selflearn.runs||[]).length) + ' 轮';
+  ['d1','d2','d3','d4'].forEach(id => { const el = document.getElementById(id); if (el) el.className = 'dot'; });
+  refreshLearned();
+  beat('live4', ' · ' + (data.generated_at ? data.generated_at.slice(11) : ''));
+}
+refreshStage(); setInterval(refreshStage, 2000);
+window.addEventListener('resize', () => setTimeout(() => { refreshLearned(); }, 120));
+
+// ══════════ ⑤ 模型性能 + GPU
+function chart(cv, data, color, fill){
+  const r = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 200, h = cv.clientHeight || 90;
+  cv.width = w * r; cv.height = h * r;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(r,0,0,r,0,0); ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle = '#1b2028'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 3; i++){
+    const y = (h-6)*i/3 + 3;
+    ctx.beginPath(); ctx.moveTo(26, y); ctx.lineTo(w-2, y); ctx.stroke();
+  }
+  const vals = data.filter(v => v != null);
+  if (vals.length < 2){ ctx.fillStyle='#4d5f70'; ctx.font='10px sans-serif'; ctx.fillText('数据不足',30,h/2); return; }
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(1e-6, hi-lo);
+  const X = i => 26 + (w-30) * i/(data.length-1);
+  const Y = v => h-4 - (h-10) * ((v-lo)/span);
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.7;
+  let started = false;
+  data.forEach((v,i) => { if (v == null) return;
+    const x = X(i), y = Y(v); if (!started){ ctx.moveTo(x,y); started = true; } else ctx.lineTo(x,y); });
+  ctx.stroke();
+  if (fill){
+    ctx.lineTo(X(data.length-1), h-4); ctx.lineTo(X(0), h-4); ctx.closePath();
+    const g = ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fill();
+  }
+  ctx.fillStyle = '#4d5f70'; ctx.font = '9px Consolas,monospace';
+  ctx.fillText(hi.toFixed(2), 0, 9); ctx.fillText(lo.toFixed(2), 0, h-3);
+  ctx.fillStyle = color; ctx.font = '10px Consolas,monospace';
+  ctx.fillText(vals[vals.length-1].toFixed(3), w-42, 9);
+}
+
+const GPU_H = [];
+function drawGpuSpark(){
+  const cv = $('#gpuSpark'); if (!cv) return;
+  const r = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 150, h = cv.clientHeight || 26;
+  cv.width = w * r; cv.height = h * r;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(r,0,0,r,0,0); ctx.clearRect(0,0,w,h);
+  if (GPU_H.length < 2) return;
+  const X = i => (w-2) * i / (GPU_H.length-1) + 1;
+  const Y = v => h-2 - (h-4) * (Math.min(100, v) / 100);
+  ctx.beginPath(); ctx.strokeStyle = '#ffc857'; ctx.lineWidth = 1.8;
+  GPU_H.forEach((v,i) => { const x=X(i), y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.stroke();
+  ctx.lineTo(X(GPU_H.length-1), h); ctx.lineTo(X(0), h); ctx.closePath();
+  ctx.fillStyle = 'rgba(255,200,87,.16)'; ctx.fill();
+}
+
+async function refreshOps(){
+  try {
+    const d = (await (await fetch('/api/ops')).json()).data || {};
+    const g = d.gpu || {}, j = d.job || {}, t = d.trend || {};
+    $('#util').innerHTML = (g.util ?? 0) + '<span style="font-size:12px;color:var(--dim)">%</span>';
+    $('#util').style.color = (g.util > 60) ? 'var(--y)' : (g.util > 5 ? 'var(--g)' : 'var(--dim)');
+    $('#membar').style.width = (g.mem_pct ?? 0) + '%';
+    $('#gpuSub').textContent = `显存 ${g.mem_used ?? 0}/${g.mem_total ?? 0}MB · ${g.temp ?? '-'}℃ · ${g.power ?? '-'}W`;
+    const js = j.state === 'running' ? `${j.label} ${j.epoch || '起'}/${j.epochs || ''} · ${j.elapsed || 0}s`
+             : (j.state === 'done' ? `${j.label} 已完成` : (j.state === 'failed' ? `${j.label} 失败` : '空闲'));
+    $('#jobLine').textContent = '当前作业：' + js;
+    $('#pGpu').innerHTML = 'GPU <b>' + (g.util ?? 0) + '%</b> ' + (g.mem_used ?? 0) + 'MB';
+    GPU_H.push(g.util ?? 0); if (GPU_H.length > 90) GPU_H.shift();
+    drawGpuSpark();
+    beat('live5', ' · ' + (g.at || ''));
+    const L = (t.learning || []).filter(x => x.map50 > 0).map(x => x.map50);
+    const C = (t.sessions || []).map(x => x.avg_conf);
+    if (L.length) chart($('#mapChart'), L, '#3ddc97', 'rgba(61,220,151,.22)');
+    if (C.length) chart($('#confChart'), C, '#39b6ff', 'rgba(57,182,255,.18)');
+  } catch(e){}
+}
+refreshOps(); setInterval(refreshOps, 1500);
+
+// ══════════ SSE：控制台点台词 / 链式接话
+try {
+  const es = new EventSource('/api/events');
+  es.addEventListener('dh', ev => {
+    const m = JSON.parse(ev.data);
+    if (m.type === 'say'){
+      say(m.text || '');
+      if (m.audio) playReply(m.audio);
+      else { speak(true); setTimeout(() => speak(false), 1400); }
+      if (m.id) refreshStage();
+    }
+  });
+} catch(e){}
+
+// 首帧后对齐一次
+setTimeout(fitAll, 400);
+setTimeout(fitAll, 1500);
+</script>
+</body>
+</html>

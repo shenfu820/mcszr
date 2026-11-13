@@ -1,0 +1,17 @@
+{
+  "model": "C:\\Users\\Administrator\\.cache\\modelscope\\models\\AI-ModelScope--stable-diffusion-inpainting\\snapshots\\master",
+  "prompt": "photo of a man wearing a navy blue workwear jacket with a light grey yoke panel across the shoulders and upper chest, two chest pockets with reflective strips, work uniform, natural fabric folds, same lighting as the photo, photorealistic, sharp fabric detail",
+  "negative": "suit, blazer, lapels, tie, formal wear, illustration, cartoon, painting, deformed, extra limbs, blurry, plasticky",
+  "strength": 0.58,
+  "steps": 40,
+  "guidance": 8.0,
+  "seed": 20261113,
+  "mask_px": 179610,
+  "crop": [
+    136,
+    57,
+    504,
+    750
+  ],
+  "when": "2026-11-13 21:38:13"
+}
