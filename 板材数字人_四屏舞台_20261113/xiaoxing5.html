@@ -63,6 +63,19 @@
   .step.on .v{color:var(--g);}
   #learnChart{flex:1;min-height:0;width:100%;}
   .cap{font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* ── 竖长窗口（宽高比 < 1.2）：2 列 4 行，每块屏接近 16:9 ── */
+  @media (max-aspect-ratio: 6/5){
+    .grid{grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr 1fr 1fr !important;}
+    #c0{grid-column:1 !important;grid-row:1 / span 2 !important;}
+    #c1{grid-column:2 !important;grid-row:1 !important;}
+    #c2{grid-column:2 !important;grid-row:2 !important;}
+    #c3{grid-column:1 !important;grid-row:3 !important;}
+    #c4{grid-column:2 !important;grid-row:3 !important;}
+    #c5{grid-column:1 / span 2 !important;grid-row:4 !important;}
+    #avatar{height:calc(100% - 104px) !important;}
+    .five{grid-template-columns:150px 1fr 1fr !important;}
+  }
+
   /* ⑤ */
   .five{grid-column:1 / span 3;display:grid;grid-template-columns:152px 1fr 1fr;gap:12px;
         padding:6px 14px 12px;overflow:hidden;}
@@ -137,7 +150,7 @@
   </section>
 
   <!-- ⑤ 模型性能 + GPU -->
-  <section class="cell five" id="c5" style="grid-column:1 / span 3;">
+  <section class="cell five" id="c5">
     <header style="position:absolute;top:4px;left:12px;border:0;padding:0;">
       <span class="dot" id="d5"></span><b>模型性能 · GPU</b><span class="live" id="live5"><i></i>LIVE</span>
     </header>
@@ -388,9 +401,13 @@ document.addEventListener('keydown', e => {
 function fitStage(){
   const box = document.getElementById('fit');
   if (!box) return;
-  const W = 1600, H = 900;
+  const W = 1600;
   const vw = window.innerWidth, vh = window.innerHeight;
-  const k = Math.min(vw / W, vh / H, 1.35);
+  // 高度跟着窗口比例走，铺满而不是留大片黑边；太扁/太瘦都给个合理范围
+  const H = Math.max(900, Math.min(1700, Math.round(W * vh / Math.max(1, vw))));
+  box.style.width = W + 'px';
+  box.style.height = H + 'px';
+  const k = Math.min(vw / W, vh / H);
   box.style.transform = 'scale(' + k.toFixed(4) + ')';
   document.documentElement.style.setProperty('--fitk', k);
 }

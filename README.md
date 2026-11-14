@@ -23,21 +23,18 @@
 
 ## 一、它是什么
 
-脚本里「5号选手」的设定是：**AI 编程助手 + 智能运维工程师**，两个职责都很具体：
+**只有一套形象：小星**（`板材数字人_四屏舞台_20261113/` 里那套人物素材，闲着/说话两个带 alpha 的 mp4）。
 
-| 脚本原话 | 本实现里的落地 |
+| 层 | 用什么 |
 |---|---|
-| 「我根据同事们的需求起草代码，经授权，直接交付到他们指定的文件夹」 | 收到指令 → 生成代码 → 真写进 `交付/<任务>/` |
-| 「同时在 Git 仓库留痕」 | 在 `交付/` 独立仓库自动 `git commit`，可 `git log` 查 |
-| 「同事们负责审查和优化」 | 代码带完整注释与参数外置，交付说明里写明请审查 |
-| 「上线之后，我还负责监测模型的检测效率」 | 每 30s 巡检真实检测库，置信度漂移超阈值就报警 |
+| 形象 | `character.js`（WebGL 双视频 alpha 混合）+ `01_人物素材_复用/H3/{idle,talk}_rgb_alpha.mp4` |
+| 语音 | 离线 FunASR 识别 + SAPI/edge-tts 出声 + 17 句剧本原声 |
+| 动作 | `setSpeaking(true/false)` 切 idle↔talk，口型靠视频帧本身 |
 
-**形象**默认是 **2.5D 照片数字人**（`avatar/assets/portrait.png`）：整张人像做成一整块
-细分平面（160×160 网格），在**顶点着色器里做局部 UV 变形**实现张嘴 / 眨眼，
-所以没有拼接缝、也最像真人照片。带呼吸浮动、边缘渐隐。
-另保留 3D 模式：Rocketbox 写实男性（FBX，带 15 个 Oculus viseme）与任意 VRM，
-用 `?model=` 切换。
-**声音**是 edge-tts 预渲染成 19 个 mp3（男声 `zh-CN-YunxiNeural`），现场只播文件，断网不影响。
+**以前那几套数字人（VRM 3D、Rocketbox FBX、2.5D 照片）已按用户要求全部删除**，
+包括 `avatar/`（含 `avatar/ops.html`）、`models/`、`model.ckpt`、`小星数字人_建模与制作素材_20261113/`，
+以及四屏舞台里那套独立页面（`index.html` / `stage.js` / `panels.js` / `css/`）。
+现在只有 `xx/xiaoxing5.html` 这一套界面。
 
 ---
 
@@ -113,12 +110,10 @@
 ```
 数字人/
 ├─ 启动数字人.bat / 停止数字人.bat / 生成语音.bat
-├─ avatar/                 3D 形象前端
 │  ├─ index.html           HUD + 字幕 + 报警横幅
 │  ├─ src/main.js          VRM 渲染 / 呼吸眨眼 / 口型 / SSE
 │  └─ dist/avatar.bundle.js  打包产物（离线可用）
 ├─ voices/ → voice/        19 个预渲染 mp3 + manifest.json
-├─ models/Seed-san.vrm     VRM 人形（VRM Public License 1.0, by VirtualCast）
 ├─ script/script.json      19 条 cue + 4 个交付任务定义
 ├─ server/
 │  ├─ dh_server.py         主服务 8772（静态 + SSE + 剧本 + Agent 入口）
@@ -146,30 +141,18 @@
 
 ---
 
-## 七、换形象
+## 七、换形象（只有小星一套）
 
-三种模式，用 URL 参数切换，互不影响：
+小星的形象 = 两段带 alpha 的视频，换人就是换这两段：
 
-| 模式 | 地址 | 说明 |
-|---|---|---|
-| **2.5D 照片（默认）** | `/avatar/` | 照片级最像；口型靠网格变形，能说话但转不了身 |
-| Rocketbox 写实 3D | `/avatar/?model=../models/rocketbox/m08/m08_facial.fbx` | 真 3D，有 15 个 Oculus viseme，能说能笑能转头 |
-| 任意 VRM | `/avatar/?model=../models/xxx.vrm` | 动漫风，表情标准 |
-
-**换照片人像**：把新图存成 `avatar/assets/portrait.png`，然后重跑一次五官定位：
-
-```bat
-"<venv 里的 python>" C:\dh_i23d\locate.py <新图> avatar\assets\face.json
+```
+板材数字人_四屏舞台_20261113/01_人物素材_复用/H3/idle_rgb_alpha.mp4   # 待机/聆听
+板材数字人_四屏舞台_20261113/01_人物素材_复用/H3/talk_rgb_alpha.mp4   # 说话
+板材数字人_四屏舞台_20261113/01_人物素材_复用/pose_still_rgba.png     # 视频解不出来时的静态兜底
 ```
 
-`face.json` 存的是嘴/眼的归一化坐标，变形完全按它定位——换个构图不同的人像只需重跑这一步。
+换完刷新窗口即可；`?still=1` 用于强制走静态帧（排障）。人物尺寸参数看同目录 `plate.json`。
 
-**换音色**：改 `script/script.json` 里 `persona.voice`，然后跑 `生成语音.bat`。
-可选中文音色：`zh-CN-YunxiNeural`（男·年轻，当前）、`zh-CN-YunjianNeural`（男·低沉）、
-`zh-CN-XiaoxiaoNeural`（女·自然）、`zh-CN-XiaoyiNeural`（女·活泼）。
-完整列表：`.venv\Scripts\python.exe server\voice_gen.py --list`
-
----
 
 ## 八、现场 checklist
 
@@ -204,7 +187,7 @@
 ```
 
 它比老脚本多做两件事：先起 `asr_service.py`（8773，voice 环境，模型常驻），
-再多开一个窗口 `avatar/ops.html`（运维屏，拖到形象窗口右边即可）。
+运维屏已经并进五屏页面的第 ⑤ 块（模型性能 + GPU），不再单独开窗口。
 
 ### 链路（每一段都实测过）
 
@@ -216,7 +199,7 @@
 | 动手 | `gpu_runner.py` 起 `gpu_worker.py`（yoloces 环境，CUDA） | 真训练：2 轮 / 248 张 / imgsz 320 / **68.8s**，GPU 利用率 27~30%、显存 5.7GB、68℃ |
 | 自己停 | worker 跑完即退，父进程只读 `progress.jsonl` | 作业结束 `exit_code=0`，GPU 回到 6% / 2.1GB |
 | 回话 | `tts.py`：SAPI 离线合成（`Microsoft Huihui`），可选 edge-tts | 单句 **~0.7s** 出声，断网可用 |
-| 看板 | `avatar/ops.html` 轮 `/api/ops`（2s） | GPU 利用率/显存/温度曲线 + 自学习 mAP50 序列 + 会话置信度 + 作业进度 |
+| 看板 | 五屏页面第 ⑤ 块轮 `/api/ops`（1.5s） | GPU 利用率/显存/温度曲线 + 自学习 mAP50 序列 + 会话置信度 + 作业进度 |
 
 ### 新增文件
 
@@ -229,7 +212,6 @@
 ├─ server/gpu_runner.py          作业调度：起进程 / 读进度 / 停作业 / 重启后接管上次作业
 ├─ server/ops_monitor.py         运维屏数据源（nvidia-smi + 三个库表）
 ├─ server/tts.py                 动态语音合成（SAPI / edge-tts）
-├─ avatar/ops.html               身边的运维屏
 └─ ops_jobs/<mode>_<时间>_<id>/  每次作业的 progress.jsonl、worker.log、runs/weights
 ```
 
@@ -340,6 +322,11 @@
 
 小星在中间那块，麦克风/常听/字幕都在他脚下；控制台点台词、链式接话都从 SSE 直接驱动他开口。
 
+**两种排版自动切**（按窗口宽高比，max-aspect-ratio: 6/5）：
+- 横窗口：3 列 —— 小星居中，四面各一块，模型性能横在底部；
+- 竖长窗口：2 列 4 行 —— 小星占左侧两行，右侧上下两块，第三行两块，模型性能占底行。
+  实测 1277×1398 的窗口下，四块屏各拿到 534×303 的格子（约 1.76:1），**整页完整、不再是中间一条**。
+
 **两块嵌网页的屏（②大屏 1920×1080、③复核中枢 1600×1000）按设计尺寸挂载、再用 CSS 等比缩到格子里**，
 所以看到的是**整页**，不是被裁掉一半的截图；要看清就**点这块屏的标题放大**（再点一次或按 `Esc` 还原）。
 
@@ -376,7 +363,6 @@
 5. `ops_jobs/` 里每次作业都会留 `runs/weights/*.pt`（各 ~44MB），现场跑十几次记得清一次。
 2. **2.5D 人像是照片，转不了身**。口型和眨眼是网格变形（拉伸 UV），不是真正的面部
    blendshape，所以侧脸/大角度转头做不了；正脸对话够用。
-3. **3D 路线（Rocketbox / VRM）仍可用**，但 Rocketbox 21 个男性里**没有东亚面孔**，
    所以要"中国人 + 真 3D + 能说话"三者兼得，得另外找带 blendshape 的亚洲模型。
 3. **未嵌入主系统窗口**。它是独立程序，通过只读库 + 8770 接口联动，不改 `new mcjc` 一行代码（产线在跑，红线不碰）。
 4. **Agent 的四个交付任务是模板化的**。模板是真的能跑的代码，但不是针对你当场说的每一句需求实时生成——除非配了 LLM key。

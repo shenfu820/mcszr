@@ -88,12 +88,10 @@ def step(n: int = 1) -> dict:
 
 
 def match(text: str) -> dict | None:
-    """同事说了上一句 → 找出该接的那一条。"""
     cues = _cues()
     if not cues or len(_norm(text)) < MIN_LEN:
         return None
 
-    # 0) 关键词规则：优先用 script.json 里写死的 keywords（确定性，不猜）
     for i, c in enumerate(cues):
         kws = [k for k in (c.get("keywords") or []) if k]
         kws += EXTRA_KEYWORDS.get(c["id"], [])
@@ -107,13 +105,11 @@ def match(text: str) -> dict | None:
 
     best = None
     for i, c in enumerate(cues):
-        # trigger 里可能有"杨飞越：xxx"这种前缀，去掉人名再比
         trig = c.get("trigger", "") or ""
         trig_body = re.sub(r"^[^：:]{1,6}[：:]", "", trig).strip()
         s = max(_sim(text, trig), _sim(text, trig_body))
         if not trig_body:
             s = max(s, _sim(text, c.get("text", "")) * 0.0)   # 没 trigger 文本就不猜
-        # 顺序先验：紧接着当前这条的下一句，给一点加成（不改变明显更优的匹配）
         if i == STATE["idx"] + 1:
             s += 0.12
         if best is None or s > best["score"]:
