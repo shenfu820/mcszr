@@ -254,11 +254,16 @@ def main() -> int:
     env = dh_env.resolve(ROOT, cfg)
     services = build_services(env)
 
-    if a.stop:
-        return stop_all(services)
+    # 先算清楚"这一轮该管哪几个端口"，启动和停止都用它
     only = {int(x) for x in a.only.split(",") if x.strip().isdigit()} if a.only else set()
     if a.body_only:
         only = {int(env.get("ASR_PORT") or 8773), int(env.get("PORT") or 8772)}
+
+    if a.stop:
+        # 只停"这一轮本来会起的那几个"：--body-only 就只停 8773/8772，
+        # 绝不去动用户自己在跑的 8770 / 8999 / 8790 / 桌面端。
+        targets = [s for s in services if (not only) or (s.get("port") in only)]
+        return stop_all(targets)
 
     print("=" * 78)
     print("数字人 · 一键启动全部   项目根 %s" % ROOT)
@@ -347,10 +352,15 @@ def main() -> int:
             print("[窗口] 主服务 %d 没在监听，先别开窗口" % main_port)
 
     print("-" * 78)
-    print("五块屏   http://127.0.0.1:%d/xx/xiaoxing5.html" % main_port)
-    print("舞台首页 http://127.0.0.1:8790/")
-    print("控制台   http://127.0.0.1:%d/console/" % main_port)
-    print("停止全部 python _tools\\dh_all.py --stop   （等价 停止数字人.bat + 关舞台）")
+    if a.body_only:
+        print("形象窗口 http://127.0.0.1:%d/xx/xiaoxing5.html" % main_port)
+        print("控制台   http://127.0.0.1:%d/console/" % main_port)
+        print("停止     python _tools\\dh_all.py --stop --body-only   （等价 停止数字人.bat）")
+    else:
+        print("五块屏   http://127.0.0.1:%d/xx/xiaoxing5.html" % main_port)
+        print("舞台首页 http://127.0.0.1:8790/")
+        print("控制台   http://127.0.0.1:%d/console/" % main_port)
+        print("停止全部 python _tools\\dh_all.py --stop   （等价 停止数字人.bat + 关舞台）")
     if warn:
         print("[WARN] 降级运行：%s" % "；".join(warn))
     if fail:

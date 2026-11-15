@@ -21,6 +21,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import os
 import subprocess
 import sys
@@ -28,6 +29,27 @@ from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
+
+HELP = """数字人 · 一键配置（新电脑第一步）
+
+用法：一键配置环境.bat [参数]        （参数原样透传给 dh_bootstrap.py）
+
+    （不带参数）          装 main + asr + gpu，缺什么装什么，已有的复用
+    --check             只看计划：不装、不改 ini、不修软链
+    --only asr          只处理一个环境（main / asr / gpu）
+    --force             已有环境也重建项目内虚拟环境
+    --all               明确指定三个都装
+    --offline           只用 wheels\\ 离线装
+    --wheels DIR        指定离线包目录
+    --index-url URL     pip 源（弱网建议 https://pypi.tuna.tsinghua.edu.cn/simple）
+    --torch-index URL   覆盖 torch 的 index-url
+    --python PATH       指定打底解释器
+    --warm-asr          顺便把语音模型下好（约 2 GB）
+    -h, --help          显示本帮助（不会动任何文件）
+
+做四件事：自动遍历找路径 → 装环境 → 修软链与 .bat 行尾 → 打体检表。
+退出码 = 体检结果（0 可以启动），而不是"某个可选环境没装上"。
+"""
 
 
 def run(script: str, args: list) -> int:
@@ -39,14 +61,26 @@ def run(script: str, args: list) -> int:
 
 
 def main() -> int:
-    args = sys.argv[1:]
-    check_only = any(a.lower() == "--check" for a in args)
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("-h", "--help", action="store_true")
+    ap.add_argument("--check", action="store_true")
+    known, rest = ap.parse_known_args()
 
-    # 1) 先找路径（--check 时只读）
+    if known.help:
+        print(HELP)
+        return 0
+
+    # 原始参数全部透传给 bootstrap（它自己认识 --only/--force/--offline/...）
+    args = sys.argv[1:]
+    check_only = known.check
+
+    # 1) 先找路径（--check 时只读，绝不写 ini）
     run("discover.py", (["--check"] if check_only else ["--write"]))
 
     # 2) 装环境（没给参数就三个都装）
-    boot_args = args if args else ["--all"]
+    boot_args = [x for x in args if x.lower() not in ("-h", "--help")]
+    if not boot_args:
+        boot_args = ["--all"]
     rc_boot = run("dh_bootstrap.py", ["--no-report", *boot_args])
 
     # 3) 软链 + 行尾（--check 不动文件）
