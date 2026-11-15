@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
-rem ── 行尾：本文件由 .gitattributes 保证 CRLF（cmd 只认 CRLF；若被存成 LF，跑 python _tools\bat_lint.py --fix）
+rem ASCII-only wrapper: test the SSH-over-443 tunnel, then push to GitHub.
 cd /d "%~dp0"
 set KEY=%USERPROFILE%\.ssh\id_ed25519_mcszr
-echo [1/2] 测试 SSH(443) 通道...
+echo [1/2] testing SSH over 443 ...
 ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=12 -p 443 -T -i "%KEY%" git@ssh.github.com
-echo [2/2] 推送到 GitHub...
+echo [2/2] pushing to GitHub ...
 git -c core.sshCommand="ssh -i %KEY% -p 443 -o StrictHostKeyChecking=accept-new" push -u github-ssh master
 echo.
-echo 退出码=%errorlevel%（0 = 成功）
+echo exit code = %errorlevel%  (0 = ok)
 pause

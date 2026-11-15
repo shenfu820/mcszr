@@ -461,6 +461,15 @@ def rows(env: dict) -> list:
 
     if env["DH_PY"]:
         r("OK", "主解释器", env["DH_PY"], f"来源 {env['DH_PY_SRC']} ｜ Python {env['DH_PY_VER']}")
+        try:
+            vt = tuple(int(x) for x in str(env["DH_PY_VER"]).split(".")[:2])
+        except Exception:                        # noqa: BLE001
+            vt = (0, 0)
+        if vt and not ((3, 9) <= vt <= (3, 12)):
+            r("WARN", "解释器版本", f"Python {env['DH_PY_VER']}",
+              "推荐 3.10（3.9~3.12）：主服务能跑，但 funasr / torch 在 "
+              f"{env['DH_PY_VER']} 上多半没有轮子，asr / gpu 环境会装不上。"
+              "要全功能就用 3.10 重建 .venv（一键配置环境.bat 会自动挑 3.9~3.12 打底）")
     else:
         r("FAIL", "主解释器", "", "本机没找到可用的 Python 3.9+：装一个 3.10，或先跑 一键部署_新电脑.bat")
     venv_ok = Path(env["root"]) / (".venv/Scripts/python.exe" if IS_WIN else ".venv/bin/python")
@@ -566,6 +575,7 @@ def main() -> int:
     ap.add_argument("--fix", action="store_true", help="只建/修 ASCII 软链（C:\\dh_root 等）")
     ap.add_argument("--no-fix", action="store_true", help="只读：--check 也不建/不修软链")
     ap.add_argument("--strict", action="store_true", help="WARN 也算失败")
+    ap.add_argument("--next-hint", action="store_true", help="体检后补一句下一步该点哪个脚本")
     a = ap.parse_args()
 
     root = Path(a.root).resolve() if a.root else Path(__file__).resolve().parent.parent
@@ -611,6 +621,16 @@ def main() -> int:
         return 0
 
     rc = print_rows(env)
+    if a.next_hint:
+        print()
+        if rc == 0:
+            print("下一步：双击 一键开启全部.bat（自动找齐各工程 → 起全部服务）")
+            print("        或只起数字人本体：启动数字人_语音版.bat")
+        else:
+            print("先把上面 FAIL 行解决，再双击 一键配置环境.bat 重跑一次。")
+        if any(r[0] == "WARN" for r in rows(env)):
+            print("WARN 不影响启动，只是对应功能降级（缺 asr 只能打字、缺 gpu ⑤屏失效）。")
+            print("要把 WARN 补掉：一键配置环境.bat（会按当前解释器装 asr / gpu 环境）")
     if a.strict and any(r[0] == "WARN" for r in rows(env)):
         print("[strict] 存在 WARN，按失败处理")
         return 1

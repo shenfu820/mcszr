@@ -237,6 +237,9 @@ def main() -> int:
     ap.add_argument("--only", default="", help="只起这些端口，逗号分隔")
     ap.add_argument("--stop", action="store_true", help="停止全部（8770/8999/8790/8772 + 桌面端）")
     ap.add_argument("--fix-bats", action="store_true", help="先修 .bat 行尾（LF -> CRLF）")
+    ap.add_argument("--body-only", action="store_true",
+                    help="只起数字人本体：语音识别 + 主服务（对应 启动数字人_语音版.bat）")
+    ap.add_argument("--no-pause", action="store_true", help="兼容参数，无作用（启动器会传）")
     a = ap.parse_args()
 
     if a.fix_bats:
@@ -254,6 +257,8 @@ def main() -> int:
     if a.stop:
         return stop_all(services)
     only = {int(x) for x in a.only.split(",") if x.strip().isdigit()} if a.only else set()
+    if a.body_only:
+        only = {int(env.get("ASR_PORT") or 8773), int(env.get("PORT") or 8772)}
 
     print("=" * 78)
     print("数字人 · 一键启动全部   项目根 %s" % ROOT)

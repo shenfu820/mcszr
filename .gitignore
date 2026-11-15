@@ -25,6 +25,7 @@ _tools/*
 !_tools/dh_findpy.cmd
 !_tools/repos.py
 !_tools/discover.py
+!_tools/dh_setup.py
 # 产线工程本地副本（45GB 级，见 vendor/README.md：只 tracked 说明文件）
 vendor/*
 !vendor/README.md

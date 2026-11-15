@@ -1,25 +1,23 @@
 @echo off
 chcp 65001 >nul
-rem EOL: kept CRLF by .gitattributes (cmd needs CRLF; if broken run: python _tools\bat_lint.py --fix)
+rem ASCII-only compatibility entry. Same as the setup script next to this file:
+rem both just call _tools\dh_setup.py (all Chinese output comes from Python).
+rem Kept because older docs and shortcuts point at this name.
 setlocal EnableExtensions
-
-rem ============================================================
-rem  兼容入口：老文档/老链接里的「一键部署_新电脑.bat」。
-rem  真正的活全在 一键配置环境.bat -> _tools\dh_bootstrap.py：
-rem  把 main / asr / gpu 三个环境一次装完（缺什么装什么），
-rem  再修软链、修行尾、打体检表。参数原样透传。
-rem ============================================================
-
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
-if not exist "%ROOT%\一键配置环境.bat" goto missing
+call "%ROOT%\_tools\dh_findpy.cmd"
+if not defined DH_FOUND_PY goto no_python
 
-call "%ROOT%\一键配置环境.bat" %*
+"%DH_FOUND_PY%" "%ROOT%\_tools\dh_setup.py" %*
 set "RC=%errorlevel%"
+echo.
+pause
 endlocal & exit /b %RC%
 
-:missing
-echo [FAIL] 一键配置环境.bat not found next to this file - repo is incomplete (git pull?)
+:no_python
+echo [FAIL] no usable Python 3.9+ found. Run the setup script named "one-click env setup" in this folder.
+echo.
 pause
 endlocal & exit /b 2

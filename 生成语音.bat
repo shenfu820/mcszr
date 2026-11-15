@@ -1,37 +1,29 @@
 @echo off
 chcp 65001 >nul
-rem ── 行尾：本文件由 .gitattributes 保证 CRLF（cmd 只认 CRLF；若被存成 LF，跑 python _tools\bat_lint.py --fix）
+rem ASCII-only wrapper (Chinese output comes from Python). Re-renders the scripted
+rem voice lines -- run it after editing script\script.json or changing the voice.
 setlocal EnableExtensions
-
-rem ============================================================
-rem  数字人 · 预渲染语音（改过剧本台词或换音色后跑一次）
-rem  解释器不写死：项目 .venv 优先，没有就用系统 Python 打底并给提示
-rem ============================================================
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
-echo ============================================================
-echo   数字人 · 预渲染语音
-echo ============================================================
 call "%ROOT%\_tools\dh_findpy.cmd"
 if not defined DH_FOUND_PY goto no_python
 
 echo.
-echo 当前可用的中文音色（前 12 个）：
+echo Available Chinese voices (first 12):
 "%DH_FOUND_PY%" "%ROOT%\server\voice_gen.py" --list
 
 echo.
-echo 开始生成（已存在且完整的会自动跳过；加 --force 全部重来）...
+echo Rendering ... existing complete files are skipped (use --force to redo all)
 "%DH_FOUND_PY%" "%ROOT%\server\voice_gen.py" %*
 
 echo.
-echo 完成。语音在 voice\ 目录，清单 voice\manifest.json
+echo Done. Audio is in voice\ , manifest in voice\manifest.json
 timeout /t 6 /nobreak >nul
 endlocal & exit /b 0
 
 :no_python
-echo [错误] 找不到可用的 Python
-echo        先双击 一键部署_新电脑.bat，或装 Python 3.10 并勾选 Add python.exe to PATH
+echo [FAIL] no usable Python found. Run the one-click env setup script first.
 echo.
 pause
 endlocal & exit /b 2
