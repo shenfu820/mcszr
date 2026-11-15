@@ -154,6 +154,14 @@ def main() -> int:
         changed = {k: v for k, v in acts.items() if v not in ("ok", "no-target")}
         print("[ok] ASCII 软链 " + (" ".join(f"{k}:{v}" for k, v in changed.items())
                                    if changed else "C:\\dh_root 等已就绪"))
+        # .bat 行尾：新机器上万一 clone/编辑器把文件存成 LF，双击就会报
+        # `'项目根' is not recognized` 这种鬼话。这里顺手修一遍（去 BOM + LF→CRLF）。
+        try:
+            import bat_lint
+            n = bat_lint.fix_all(root)
+            print("[ok] .bat/.cmd 行尾 " + (f"修了 {n} 个" if n else "都是 CRLF"))
+        except Exception as e:                    # noqa: BLE001
+            print(f"[warn] .bat 行尾体检跳过：{type(e).__name__}: {e}")
 
     # 4) 自检
     print()

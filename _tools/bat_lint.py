@@ -78,6 +78,15 @@ def fix(p: Path) -> bool:
     return False
 
 
+def fix_all(root: Path) -> int:
+    """把 root 下所有 .bat/.cmd 就地修成 utf-8 + CRLF（去 BOM）。返回修了几个。"""
+    n = 0
+    for p in iter_bats(root):
+        if fix(p):
+            n += 1
+    return n
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")

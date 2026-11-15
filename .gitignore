@@ -18,8 +18,13 @@ _tools/*
 !_tools/dh_env.py
 !_tools/dh_spawn.py
 !_tools/dh_deploy.py
+!_tools/dh_all.py
+!_tools/start_all.ps1
 !_tools/bat_lint.py
 !_tools/dh_findpy.cmd
+# 产线工程本地副本（45GB 级，见 vendor/README.md：只 tracked 说明文件）
+vendor/*
+!vendor/README.md
 # 每次 GPU 作业的权重与日志（跑一次 44MB）
 ops_jobs/
 # 语音测试样本

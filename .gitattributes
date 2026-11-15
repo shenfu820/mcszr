@@ -1,0 +1,7 @@
+# ── 行尾纪律（踩过大坑，见 docs/跨机器部署.md §0）
+# cmd 只认 CRLF 的 .bat：文件被存成 LF 时，cmd 边读边解析会把中文切成残字节，
+# 报出 `'项目根' is not recognized` / `'�.bat' is not recognized` 这类莫名其妙的错。
+# 这里让 git 在"存"的时候用 LF、"检出"的时候写成 CRLF，任何机器 clone 下来都是好的。
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
