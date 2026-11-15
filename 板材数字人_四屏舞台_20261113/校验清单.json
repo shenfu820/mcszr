@@ -1,7 +1,7 @@
 {
   "package": "板材数字人_四屏舞台_20261113",
   "files": 68,
-  "total_bytes": 81351996,
+  "total_bytes": 81352272,
   "note": "本表为本包内文件的实测尺寸与 SHA256；人物素材的复制来源见 01_人物素材_复用/来源与SHA256.json",
   "items": [
     {
@@ -226,13 +226,13 @@
     },
     {
       "path": "05_服务/停止四屏.bat",
-      "bytes": 402,
-      "sha256": "c782bac60e6a6e1a7e870022cd1cce4f5c8bbdc329d68d334350af643bcfb19f"
+      "bytes": 540,
+      "sha256": "9dfe1f104df43f5ab185632868a262f9af35a280ea10c4e6112d6ee0ec77d12c"
     },
     {
       "path": "05_服务/启动四屏.bat",
-      "bytes": 6224,
-      "sha256": "ba924083ab010ffbfac678b9f7b3efdd5aab13f00d88f0651e51e44a1e4e954c"
+      "bytes": 6362,
+      "sha256": "2b6701109dba5d81a4859d8f6b4a2bd76326d08d5c58ba9b955b3f87d6a634ee"
     },
     {
       "path": "06_验收截图/01_全景_四屏.png",
