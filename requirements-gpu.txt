@@ -1,0 +1,16 @@
+# GPU environment (.venv-gpu): train/eval/infer worker + production desktop app + screen.
+#
+# torch is NOT listed here on purpose: _tools/dh_bootstrap.py installs torch first,
+# picking the index by whether an NVIDIA GPU is present
+#   has GPU    -> https://download.pytorch.org/whl/cu124
+#   no GPU     -> https://download.pytorch.org/whl/cpu
+# so we never end up with a CPU-only torch on a machine that has a GPU (or a 2 GB
+# CUDA wheel download on a machine that has none).
+#
+# Manual equivalent:
+#   <env>\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+#   <env>\Scripts\python.exe -m pip install -r requirements-gpu.txt
+#
+# NOTE: keep this file ASCII-only (pip reads requirements with the system locale).
+ultralytics>=8.3
+Pillow>=10.0

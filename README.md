@@ -60,11 +60,14 @@ ASCII 软链（`C:\dh_root` / `dh_prod` / `dh_ds`）不用手工建：
 ## 二、30 秒上手
 
 ```bat
-启动数字人_语音版.bat        :: 起服务 + 开形象窗口 + 开控制台
-启动数字人_语音版.bat --check :: 先体检（不起任何服务）
+一键配置环境.bat               :: 新电脑第一次：三个环境（main/asr/gpu）一条命令装完，缺什么装什么
+一键配置环境.bat --check       :: 只打计划不动手
+启动数字人_语音版.bat          :: 起服务 + 开形象窗口 + 开控制台
+启动数字人_语音版.bat --check   :: 先体检（不起任何服务）
 ```
 
-（新电脑第一次先跑一次 `一键部署_新电脑.bat`，见 [docs/跨机器部署.md](docs/跨机器部署.md)。）
+（本机已经有环境就跳过第一条。换机器、依赖哪些项目、仓库地址，见
+[docs/跨机器部署.md](docs/跨机器部署.md) 与 [docs/仓库与依赖清单.md](docs/仓库与依赖清单.md)。）
 
 打开后：
 - **形象窗口**：数字人本体，透明背景，可拖到副屏
@@ -131,8 +134,11 @@ ASCII 软链（`C:\dh_root` / `dh_prod` / `dh_ds`）不用手工建：
 
 ```
 数字人/
-├─ 一键部署_新电脑.bat / 启动数字人_语音版.bat / 停止数字人.bat / 生成语音.bat
+├─ 一键配置环境.bat / 一键启动全部.bat / 启动数字人_语音版.bat / 停止数字人.bat / 生成语音.bat
 ├─ config/paths.ini        跨机器路径表（换电脑只改这个文件）
+├─ config/repos.ini        依赖项目与仓库登记表（谁在哪、远端是什么）
+├─ _tools/dh_bootstrap.py  三个环境一次装完（main/asr/gpu，缺什么装什么）
+├─ _tools/repos.py         依赖仓库：--report / --check / --init / --clone / --manifest
 ├─ _tools/dh_env.py        路径探测 + 部署体检（--check / --json / --emit-bat）
 ├─ _tools/dh_spawn.py      起进程 / 等就绪 / 按端口收尸
 ├─ _tools/dh_findpy.cmd    找可用 Python（DH_PY → .venv → py -3.x → PATH）

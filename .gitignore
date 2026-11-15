@@ -18,10 +18,12 @@ _tools/*
 !_tools/dh_env.py
 !_tools/dh_spawn.py
 !_tools/dh_deploy.py
+!_tools/dh_bootstrap.py
 !_tools/dh_all.py
 !_tools/start_all.ps1
 !_tools/bat_lint.py
 !_tools/dh_findpy.cmd
+!_tools/repos.py
 # 产线工程本地副本（45GB 级，见 vendor/README.md：只 tracked 说明文件）
 vendor/*
 !vendor/README.md
