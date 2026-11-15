@@ -13,8 +13,10 @@
     python _tools/dh_env.py --write-config          把探测到的路径写回 config/paths.ini
 
 关于 ASCII 软链：C:\\dh_root → 本项目，C:\\dh_prod → new mcjc，C:\\dh_ds → 数据集。
-`--check` 默认会顺手把缺/指错方向的软链建好（mklink /J，不需要管理员），
-所以新机器 clone 下来直接 `--check` 就能看到 OK；想只看不动用 `--no-fix`。
+`--check` 会顺手补上「缺失」的那几条（mklink /J，不需要管理员）；
+但「指错方向」（stale）只会报警告，必须显式 `--fix` 才重指 ——
+免得在临时 clone 里跑一次体检，把别人机器上的 C:\\dh_root 抢过来。
+纯只读用 `--no-fix`。
 
 配置文件 config/paths.ini 一律是 KEY=VALUE，值留空 = 自动探测。
 环境变量优先级最高：DH_PY / DH_ASR_PY / DH_GPU_PY / DH_PROD / DH_DS / DH_BROWSER。
@@ -571,9 +573,10 @@ def main() -> int:
     cfg = read_ini(cfg_path)
     env = resolve(root, cfg)
 
-    # ASCII 软链：--check 默认顺手建好（junction 不需要管理员），--no-fix 才是纯只读
+    # ASCII 软链：--check 只补"缺失"的；指错方向(stale)必须显式 --fix 才动，
+    # 免得在别的副本/临时 clone 里跑一次体检就把 C:\dh_root 抢走。
     if a.fix or (a.check and not a.no_fix):
-        acts = ensure_junctions(env)
+        acts = ensure_junctions(env, force=bool(a.fix))
         changed = {k: v for k, v in acts.items() if v not in ("ok", "no-target")}
         if changed:
             print("[软链] " + " ".join(f"{k}:{v}" for k, v in changed.items()), file=sys.stderr)
