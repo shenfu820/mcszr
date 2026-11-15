@@ -1,7 +1,7 @@
 {
   "package": "板材数字人_四屏舞台_20261113",
-  "files": 82,
-  "total_bytes": 82012281,
+  "files": 68,
+  "total_bytes": 81351996,
   "note": "本表为本包内文件的实测尺寸与 SHA256；人物素材的复制来源见 01_人物素材_复用/来源与SHA256.json",
   "items": [
     {
@@ -10,19 +10,14 @@
       "sha256": "776c717b0b50a8903f32a8bfc34228fec138f3443996cef5ed707c9a90020b96"
     },
     {
-      "path": "README.md",
-      "bytes": 14988,
-      "sha256": "2c47b8420912389d58a9928471700aa47d7c5827b68fba51d05f83cca6690955"
-    },
-    {
       "path": "xiaoxing.html",
       "bytes": 14457,
       "sha256": "7d04b97164dad38d6ea16f10b684630218ee30766d1d0984feaa0f74c7ac9c84"
     },
     {
       "path": "xiaoxing5.html",
-      "bytes": 29493,
-      "sha256": "51a872caa1b556254800b2e07bfefe8b58a15aa30e9b36630bdb5131944c8711"
+      "bytes": 33171,
+      "sha256": "fc2eedaf23caa76efe2aca2162b6404e77ea7e5e646e4509d9bd96ada01c6902"
     },
     {
       "path": "01_人物素材_复用/pose_still_rgba.png",
@@ -80,11 +75,6 @@
       "sha256": "e7205c5dc047e038fc268e3dcd66517f5a5053c3c31e5f45bfb5b0ea0bb411ad"
     },
     {
-      "path": "02_四屏舞台/index.html",
-      "bytes": 2493,
-      "sha256": "a3215d8d6cfe75c8c286b54f9dac6582040206ec5b09ee5b309f960a5758e270"
-    },
-    {
       "path": "02_四屏舞台/assets/detected_preview.jpg",
       "bytes": 46983,
       "sha256": "a946025270f7c5b0e72d7e83ca761f77b1b60f7cd4d3120be94c2a720d4bc080"
@@ -125,29 +115,14 @@
       "sha256": "467e3f561ea1f20f9b5c6d637a86f78c16be97c323c7c2a073a382fd8e3e6d47"
     },
     {
-      "path": "02_四屏舞台/css/stage.css",
-      "bytes": 15169,
-      "sha256": "b70aa8c7dc4648bf6e969279f67e559dd3aaf9423e75a59112a7496bae35eaf0"
-    },
-    {
       "path": "02_四屏舞台/js/character.js",
       "bytes": 15235,
       "sha256": "805b1b67d5b24f21c02a800a94cee999f32c64caff966c01133b347f826e05ae"
     },
     {
-      "path": "02_四屏舞台/js/panels.js",
-      "bytes": 10602,
-      "sha256": "41e6fa9488aa967d618bf50ac064a24c25b9053009fff38dec8c1f45ddb010e4"
-    },
-    {
-      "path": "02_四屏舞台/js/stage.js",
-      "bytes": 20135,
-      "sha256": "a11a2e7fd38fe7d5f5d26eb00c3b3c60fabdb41284fb258fae63977f3e4054c0"
-    },
-    {
       "path": "03_数据/build_snapshot.py",
-      "bytes": 24363,
-      "sha256": "6f6dbb3453d5acfa2fde2ba4578574d3c57f5d4a7b27a3d2e793e175a725381b"
+      "bytes": 28469,
+      "sha256": "02a8cd1293329745cdf2b105f0120b560a8ebfa8eb5a6846aa32cba415589544"
     },
     {
       "path": "03_数据/inpaint_batch.py",
@@ -240,54 +215,9 @@
       "sha256": "f06dd328d4d9e9921689f7ef5e4aee3ee168a1dbd69f4d438ca634cb31b7d127"
     },
     {
-      "path": "04_台词配音/make_voice.py",
-      "bytes": 1806,
-      "sha256": "72a5ab3f2d5fd11f23af70ac5508363f28b6f39856428af2d613f52c289684fa"
-    },
-    {
-      "path": "04_台词配音/script.js",
-      "bytes": 1787,
-      "sha256": "a80ee47deafced006ebec9a80ee0da53c02af8ef51669b83b0af9128df6cd672"
-    },
-    {
-      "path": "04_台词配音/script.json",
-      "bytes": 1996,
-      "sha256": "ecfdb9d6f65922dd314bb0d68e04b5d958c71a2cd568cac88960d7fab1c4ffa1"
-    },
-    {
-      "path": "04_台词配音/voice/inspect.mp3",
-      "bytes": 149472,
-      "sha256": "74f21a4f60ef5c6c2827003b581a0f442d6f98a49bb73b91c97f17dcfab1256e"
-    },
-    {
-      "path": "04_台词配音/voice/intro.mp3",
-      "bytes": 84384,
-      "sha256": "bc74d186ab521911d4965b95dcd0f090c84270bfaf2e334ce673ce60efe52a8e"
-    },
-    {
-      "path": "04_台词配音/voice/learn.mp3",
-      "bytes": 133776,
-      "sha256": "ef3e8029a66f8f5775d48b75435e543ef052db6b6add3fb4adb1eb64c0ba563d"
-    },
-    {
-      "path": "04_台词配音/voice/outro.mp3",
-      "bytes": 46368,
-      "sha256": "113a8d2e25891af3e33e5204dd0404b7a19075e8a39b592e499e7df6286a3841"
-    },
-    {
-      "path": "04_台词配音/voice/review.mp3",
-      "bytes": 99360,
-      "sha256": "c818747921eea6a21193335a028dfaf0c202babba45b9d52c57425a5c0785ad9"
-    },
-    {
-      "path": "04_台词配音/voice/screen.mp3",
-      "bytes": 93600,
-      "sha256": "b903a80d7b4a1f8f7c8ac1d877bec2ea3cd35dcbece33ff8c52ef4d7c2570052"
-    },
-    {
       "path": "05_服务/stage_server.py",
-      "bytes": 10229,
-      "sha256": "5d3be52fafcd3a7f644115f64f8c4168fb3b29b31836e1bc98217e2835c9e345"
+      "bytes": 13992,
+      "sha256": "bf95a63b1492e84712d56c41135042eeff4960db3782cf073c28515e7812a3d1"
     },
     {
       "path": "05_服务/wincap.py",
@@ -301,8 +231,8 @@
     },
     {
       "path": "05_服务/启动四屏.bat",
-      "bytes": 2120,
-      "sha256": "92232edc4379d48f337e358d64ef867db206d6ddfd65e3117d59c0bac934130a"
+      "bytes": 6224,
+      "sha256": "ba924083ab010ffbfac678b9f7b3efdd5aab13f00d88f0651e51e44a1e4e954c"
     },
     {
       "path": "06_验收截图/01_全景_四屏.png",

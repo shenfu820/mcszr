@@ -1,1 +1,4 @@
 edge-tts>=6.1.0
+# 四屏舞台的「检测系统」那块屏要截 run.py 窗口（05_服务\wincap.py 用 GDI + Pillow 编 JPEG）；
+# 少了它 ① 屏会显示「未连接」，其余屏不受影响。
+Pillow>=10.0

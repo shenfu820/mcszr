@@ -29,7 +29,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILDER = os.path.join(PKG, '03_数据', 'build_snapshot.py')
-INDEX = '/02_四屏舞台/index.html'
+# 默认首页：五屏页。旧包里还有 02_四屏舞台/index.html，但那份早被 xiaoxing5.html 取代了，
+# 所以这里按「文件在不在」挑一个，别再让 8790 的根路径 302 到 404。
+INDEX = os.environ.get('DH_STAGE_INDEX') or '/xiaoxing5.html'
+
+
+def index_path() -> str:
+    for cand in (INDEX, '/xiaoxing5.html', '/xiaoxing.html', '/02_四屏舞台/index.html'):
+        if cand and os.path.isfile(os.path.join(PKG, cand.lstrip('/').replace('/', os.sep))):
+            return cand
+    return INDEX
+
 
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('text/css', '.css')
@@ -39,11 +49,64 @@ _cache = {'ts': 0.0, 'data': None}
 CACHE_TTL = 3.0
 
 # 三套真实系统的地址（与 settings.json 的端口一致，只探活，不改它们）
-SCREEN_URL = 'http://127.0.0.1:8770'
-AGENT_URL = 'http://127.0.0.1:8999'
-WIN_TITLE = '缺陷智能检测系统'          # run.py 窗口标题里的稳定片段
+# 换机器/接远端：环境变量 DH_SCREEN_URL / DH_AGENT_URL / DH_WIN_TITLE，
+# 或在 数字人\config\paths.ini 里写 SCREEN_URL= / AGENT_URL= / WIN_TITLE=
+ROOT = os.path.dirname(os.path.dirname(PKG))     # 数字人 根（config/paths.ini 在这）
+INI = os.path.join(ROOT, 'config', 'paths.ini')
+
+
+def _ini(key, default=''):
+    try:
+        with open(INI, 'r', encoding='utf-8', errors='replace') as f:
+            for raw in f:
+                s = raw.strip()
+                if not s or s[0] in ';#[' or '=' not in s:
+                    continue
+                k, v = s.split('=', 1)
+                if k.strip().upper() == key:
+                    return v.strip() or default
+    except Exception:                        # noqa: BLE001
+        pass
+    return default
+
+
+SCREEN_URL = (os.environ.get('DH_SCREEN_URL') or _ini('SCREEN_URL', 'http://127.0.0.1:8770')).rstrip('/')
+AGENT_URL = (os.environ.get('DH_AGENT_URL') or _ini('AGENT_URL', 'http://127.0.0.1:8999')).rstrip('/')
+WIN_TITLE = os.environ.get('DH_WIN_TITLE') or _ini('WIN_TITLE', '缺陷智能检测系统')
 
 FEED = None
+_DESK = {'ts': 0.0, 'meta': {}}
+
+
+def desktop_meta(max_age=2.0):
+    """窗口抓帧的在线状态（带缓存，别让每 2 秒的刷新都把 GDI 抓一遍）。"""
+    now = time.time()
+    if _DESK['meta'] and now - _DESK['ts'] < max_age:
+        return _DESK['meta']
+    try:
+        meta = get_feed().frame()[1] or {}
+    except Exception as e:                   # noqa: BLE001
+        meta = {'ok': False, 'error': '%s: %s' % (type(e).__name__, e)}
+    _DESK.update(ts=now, meta=meta)
+    return meta
+
+
+def live_block():
+    """三块「本体屏」的在线状态：谁没起，舞台就显示占位，不空白也不造假画面。"""
+    screen = probe(SCREEN_URL)
+    agent = probe(AGENT_URL)
+    meta = desktop_meta()
+    return {
+        'screen': dict(screen, url=SCREEN_URL),
+        'agent': dict(agent, url=AGENT_URL),
+        'desktop': {'online': bool(meta.get('ok')), 'title': meta.get('title', ''),
+                    'pid': meta.get('pid'), 'window': WIN_TITLE,
+                    'error': meta.get('error'),
+                    'capture_at': (time.strftime('%H:%M:%S', time.localtime(meta['at']))
+                                   if meta.get('at') else None)},
+        'at': time.strftime('%Y-%m-%d %H:%M:%S'),
+    }
+
 
 
 def get_feed():
@@ -161,12 +224,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({'code': 200, 'msg': 'ok', 'data': {
                     'service': 'bancai-stage', 'version': '1.0.0', 'pid': os.getpid(),
                     'package': PKG,
-                    'index': INDEX,
+                    'index': index_path(),
                     'time': time.strftime('%Y-%m-%d %H:%M:%S'),
                 }})
                 return
             if path == '/api/stage':
-                self._json({'code': 200, 'msg': 'ok', 'data': stage_payload()})
+                data = stage_payload()
+                port = self.server.server_port
+                data['urls'] = {
+                    'screen': SCREEN_URL + '/',
+                    'agent': AGENT_URL + '/',
+                    # 同源优先（8772 会转发 /api/win/*），没有转发时退回 8790 直连
+                    'desktop': '/api/win/desktop.jpg',
+                    'desktop_direct': 'http://127.0.0.1:%d/api/win/desktop.jpg' % port,
+                    'stage': 'http://127.0.0.1:%d/' % port,
+                }
+                data['live'] = live_block()
+                self._json({'code': 200, 'msg': 'ok', 'data': data})
+                return
+            if path == '/api/config':
+                port = self.server.server_port
+                self._json({'code': 200, 'msg': 'ok', 'data': {
+                    'urls': {'screen': SCREEN_URL + '/', 'agent': AGENT_URL + '/',
+                             'desktop': '/api/win/desktop.jpg',
+                             'desktop_direct': 'http://127.0.0.1:%d/api/win/desktop.jpg' % port,
+                             'stage': 'http://127.0.0.1:%d/' % port},
+                    'win_title': WIN_TITLE,
+                }})
                 return
             if path.startswith('/api/win/'):
                 key = path[len('/api/win/'):]
@@ -185,23 +269,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, jpeg, 'image/jpeg', {'Cache-Control': 'no-store, max-age=0'})
                 return
             if path == '/api/systems':
-                screen = probe(SCREEN_URL)
-                agent = probe(AGENT_URL)
-                meta = get_feed().frame()[1]
-                self._json({'code': 200, 'msg': 'ok', 'data': {
-                    'desktop': {'online': bool(meta.get('ok')), 'title': meta.get('title', ''),
-                                'pid': meta.get('pid'), 'window': WIN_TITLE,
-                                'capture_at': time.strftime('%H:%M:%S', time.localtime(meta['at']))
-                                if meta.get('at') else None},
-                    'screen': dict(screen, url=SCREEN_URL),
-                    'agent': dict(agent, url=AGENT_URL),
-                    'at': time.strftime('%Y-%m-%d %H:%M:%S'),
-                }})
+                self._json({'code': 200, 'msg': 'ok', 'data': live_block()})
                 return
             full = self._resolve(path)
             if full is None:
                 q = urllib.parse.urlsplit(self.path).query      # 保留 ?outfit= / ?still= 这类参数
-                loc = urllib.parse.quote(INDEX) + (('?' + q) if q else '')
+                loc = urllib.parse.quote(index_path()) + (('?' + q) if q else '')
                 self.send_response(302)
                 self.send_header('Location', loc)
                 self.end_headers()
@@ -232,20 +305,27 @@ def main():
 
     if args.check:
         d = stage_payload()
+        dep = d.get('deployed', True) is not False
         print(json.dumps({
-            'generated_at': d['generated_at'],
-            'inspect': {k: d['inspect'][k] for k in ('total', 'sessions', 'sessions_total', 'avg_conf', 'max_conf')},
-            'screen': {k: d['screen'][k] for k in ('sessions', 'frames', 'defect_frames', 'defects',
-                                                   'nodes_online', 'nodes_total')},
-            'review': {k: d['review'][k] for k in ('total', 'needs_human', 'pending', 'avg_agree')},
-            'selflearn': {'samples': d['selflearn']['samples'],
+            'deployed': dep,
+            'note': d.get('note', ''),
+            'generated_at': d.get('generated_at'),
+            'urls': {'screen': SCREEN_URL + '/', 'agent': AGENT_URL + '/', 'win_title': WIN_TITLE},
+            'live': {k: (v.get('online') if isinstance(v, dict) else None)
+                     for k, v in (live_block() or {}).items() if k != 'at'},
+            'inspect': {k: d['inspect'].get(k) for k in ('total', 'sessions', 'sessions_total', 'avg_conf', 'max_conf')},
+            'screen': {k: d['screen'].get(k) for k in ('sessions', 'frames', 'defect_frames', 'defects',
+                                                       'nodes_online', 'nodes_total')},
+            'review': {k: d['review'].get(k) for k in ('total', 'needs_human', 'pending', 'avg_agree')},
+            'selflearn': {'samples': d['selflearn'].get('samples'),
                           'current': (d['selflearn'].get('current') or {}).get('name')},
         }, ensure_ascii=False, indent=2))
-        return
+        return 0 if dep else 1
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
-    print('bancai stage  ->  http://%s:%d%s' % (args.host, args.port, INDEX))
+    print('bancai stage  ->  http://%s:%d%s' % (args.host, args.port, index_path()))
     print('api /api/stage  /api/health   (package: %s)' % PKG)
+    print('probe  大屏 %s   对话中枢 %s   窗口标题 %s' % (SCREEN_URL, AGENT_URL, WIN_TITLE))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -255,4 +335,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main() or 0)

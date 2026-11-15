@@ -8,6 +8,12 @@ rem  四屏舞台一键起（跨机器版）
 rem  解释器与产线目录不再写死：
 rem    解释器   _tools\dh_findpy.cmd + dh_env.py 探测（优先带 CUDA 的那个）
 rem    产线目录 config\paths.ini 的 PROD_ROOT（指向 new mcjc 本身）
+rem  本机没有产线（另一台电脑只放屏）也能起：
+rem    ①②③ 三块屏会各自显示"未连接"，舞台、形象、自学习闭环照常；
+rem    要把屏接到产线机，在 config\paths.ini 里写
+rem      SCREEN_URL=http://产线机IP:8770
+rem      AGENT_URL=http://产线机IP:8999
+rem    （产线机那边的 screen_service / agent_service 要监听 0.0.0.0，不是 127.0.0.1）
 rem  只体检不起服务：本脚本加 --check
 rem ============================================================
 
@@ -133,9 +139,17 @@ echo [check] 解释器   %PY%
 echo [check] 产线目录 %PROJ%
 echo [check] 包目录   %PKG%
 echo [check] 舞台端口 %PORT%
+set "SURL="
+set "AURL="
+if exist "%PROJROOT%\config\paths.ini" for /f "usebackq tokens=1,* delims==" %%A in ("%PROJROOT%\config\paths.ini") do if /i "%%A"=="SCREEN_URL" set "SURL=%%B"
+if exist "%PROJROOT%\config\paths.ini" for /f "usebackq tokens=1,* delims==" %%A in ("%PROJROOT%\config\paths.ini") do if /i "%%A"=="AGENT_URL" set "AURL=%%B"
+if defined SURL echo [check] 大屏地址 %SURL%
+if defined AURL echo [check] 中枢地址 %AURL%
+if not exist "%PKG%\xiaoxing5.html" echo [FAIL] 缺 xiaoxing5.html：五屏页面打不开
 if not exist "%PKG%\05_服务\stage_server.py" echo [FAIL] 缺 stage_server.py：舞台服务起不来
-if not exist "%PROJ%\screen_service.py" echo [WARN] 缺产线 screen_service.py：大屏 8770 起不来
-if not exist "%PROJ%\..\angent\agent_service.py" echo [WARN] 缺 angent\agent_service.py：对话中枢 8999 起不来
+if not exist "%PROJ%\screen_service.py" echo [WARN] 缺产线 screen_service.py：大屏 8770 起不来（屏上会显示"未连接"）
+if not exist "%PROJ%\..\angent\agent_service.py" echo [WARN] 缺 angent\agent_service.py：对话中枢 8999 起不来（屏上会显示"未连接"）
+if not defined PROJ echo [WARN] 本机没有产线目录：①②③ 屏显示"未连接"，舞台与自学习闭环照常（远端接法见本文件头注释）
 endlocal & exit /b 0
 
 :no_proj

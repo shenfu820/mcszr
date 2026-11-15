@@ -21,15 +21,64 @@ from datetime import datetime, timedelta
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJ = r'C:\Users\Administrator\Desktop\项目与竞赛\aa比赛项目\new mcjc'
-DB = os.path.join(PROJ, 'data', 'wood_inspect.db')
-SETTINGS = os.path.join(PROJ, 'config', 'settings.json')
-DETECTED_DIR = os.path.join(PROJ, 'output', 'detected')
+ROOT = os.path.dirname(PKG)              # 数字人 根（config/paths.ini、_tools/dh_env.py 在这）
+
+
+def _ini_get(key: str, default: str = '') -> str:
+    p = os.path.join(ROOT, 'config', 'paths.ini')
+    try:
+        with open(p, 'r', encoding='utf-8', errors='replace') as f:
+            for raw in f:
+                s = raw.strip()
+                if not s or s[0] in ';#[' or '=' not in s:
+                    continue
+                k, v = s.split('=', 1)
+                if k.strip().upper() == key:
+                    return v.strip() or default
+    except Exception:                        # noqa: BLE001
+        pass
+    return default
+
+
+def _detect_proj() -> str:
+    """产线目录：环境变量 DH_PROD > config/paths.ini 的 PROD_ROOT > _tools/dh_env.py 自动探测。
+
+    换台电脑（没装 new mcjc）时这里会返回空串，下面的 compute_snapshot 就吐「未部署」空快照，
+    而不是抛异常把 8790 打成 500。
+    """
+    for cand in (os.environ.get('DH_PROD'), _ini_get('PROD_ROOT')):
+        if cand and os.path.isdir(cand):
+            return cand
+    try:
+        import importlib.util as _il
+        from pathlib import Path as _P
+        spec = _il.spec_from_file_location('dh_env_bs', os.path.join(ROOT, '_tools', 'dh_env.py'))
+        if spec is None:
+            return ''
+        mod = _il.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        cfg = mod.read_ini(_P(os.path.join(ROOT, 'config', 'paths.ini')))
+        return (mod.resolve(_P(ROOT), cfg) or {}).get('DH_PROD') or ''
+    except Exception:                        # noqa: BLE001
+        return ''
+
+
+def _base_url(env_name: str, ini_key: str, port: int) -> str:
+    v = (os.environ.get(env_name) or _ini_get(ini_key) or '').strip()
+    return (v.rstrip('/') if v else 'http://127.0.0.1:%d' % port)
+
+
+PROJ = _detect_proj()
+DB = os.path.join(PROJ, 'data', 'wood_inspect.db') if PROJ else ''
+SETTINGS = os.path.join(PROJ, 'config', 'settings.json') if PROJ else ''
+DETECTED_DIR = os.path.join(PROJ, 'output', 'detected') if PROJ else ''
 OUT_DATA = os.path.join(PKG, '03_数据')
 OUT_ASSETS = os.path.join(PKG, '02_四屏舞台', 'assets')
 OUT_SCRIPT = os.path.join(PKG, '04_台词配音')
-SCREEN_API = 'http://127.0.0.1:8770/api/overview'
-SCREEN_HEALTH = 'http://127.0.0.1:8770/api/health'
+SCREEN_BASE = _base_url('DH_SCREEN_URL', 'SCREEN_URL', 8770)
+AGENT_BASE = _base_url('DH_AGENT_URL', 'AGENT_URL', 8999)
+SCREEN_API = SCREEN_BASE + '/api/overview'
+SCREEN_HEALTH = SCREEN_BASE + '/api/health'
 
 CN_COLOR = {          # 与 wood_inspect/taxonomy.py 类别一一对应，颜色仅本舞台使用
     'dry_knot': '#d98a3d', 'sound_knot': '#89b4fa', 'edge_knot': '#a6e3a1',
@@ -154,7 +203,7 @@ def build_screen(cur, cfg):
          'RS485 ｜ %s ｜ 保持 %ss' % (cfg.get('alarm_port'), cfg.get('alarm_duration_sec'))),
         ('采集输入源', '就绪', '%s ｜ %s' % (cfg.get('source_mode'), cfg.get('cam_expect_ip'))),
         ('大屏通道', '正常' if screen_online else '离线',
-         'SSE ｜ 127.0.0.1:%s' % cfg.get('screen_port')),
+         'SSE ｜ %s' % SCREEN_API.split('//', 1)[-1]),
     ]
     nodes = [{'name': n, 'status': s, 'detail': d} for n, s, d in node_defs]
     return {
@@ -170,7 +219,7 @@ def build_screen(cur, cfg):
         'nodes_online': sum(1 for n in nodes if n['status'] in ('正常', '就绪')),
         'nodes_total': len(nodes),
         'screen_api': {
-            'url': 'http://127.0.0.1:%s/api/overview' % cfg.get('screen_port'),
+            'url': SCREEN_API,
             'online': screen_online,
             'version': (health.get('data') or {}).get('version') if screen_online else None,
             'pid': (health.get('data') or {}).get('pid') if screen_online else None,
@@ -416,14 +465,57 @@ def build_script(snap):
     return p
 
 
+def _zeroize(o):
+    """把快照模板里的数字/文字清零但保留结构：前端是按字段名读的，缺字段会报错。"""
+    if isinstance(o, bool):
+        return False
+    if isinstance(o, dict):
+        return {k: _zeroize(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return []
+    if isinstance(o, (int, float)):
+        return 0
+    if isinstance(o, str):
+        return ''
+    return o
+
+
+def _stub_snapshot():
+    """本机没接产线系统时用的空快照：结构照旧、数字全 0、带一句人话说明。
+
+    模板取 03_数据/snapshot.json（仓库里带了一份真快照），所以字段名不会漂。
+    """
+    try:
+        with open(os.path.join(OUT_DATA, 'snapshot.json'), 'r', encoding='utf-8') as f:
+            snap = _zeroize(json.load(f))
+    except Exception:                        # noqa: BLE001
+        snap = {}
+    snap.update({
+        'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'deployed': False,
+        'note': ('本机没有接产线系统（PROD_ROOT / DH_PROD 指向的 new mcjc 不存在），'
+                 '四块屏的数字显示 0。要连产线机：在 config/paths.ini 写 PROD_ROOT=、'
+                 'SCREEN_URL=、AGENT_URL=（见 docs/跨机器部署.md「只部署屏幕」）'),
+        'db': {'path': '', 'size_kb': 0, 'mtime': ''},
+    })
+    sysd = snap.setdefault('system', {})
+    sysd.update({'title': '（本机未接产线系统）',
+                 'title_en': 'Production system not deployed on this PC',
+                 'model_exists': False})
+    return snap
+
+
 def compute_snapshot(make_preview=True):
     """算出四屏要用的全部数据（只读库）。make_preview=False 时不重写缩略图，
     供 05_服务/stage_server.py 每 5 秒刷新用。"""
+    if not (PROJ and os.path.isfile(DB) and os.path.isfile(SETTINGS)):
+        return _stub_snapshot()          # 换台没装产线的电脑：给空快照，别抛异常
     cfg = load_settings()
     con = sqlite3.connect('file:' + DB + '?mode=ro', uri=True)
     cur = con.cursor()
     snap = {
         'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'deployed': True,
         'system': {
             'title': cfg.get('user_title'), 'title_en': cfg.get('user_title_en'),
             'theme': cfg.get('theme'), 'model': os.path.basename(str(cfg.get('model_path'))),
@@ -455,6 +547,11 @@ def _preview_meta():
 
 def main():
     snap = compute_snapshot(make_preview=True)
+    if snap.get('deployed') is False and '--force' not in sys.argv:
+        print('本机没有接产线系统：这次不写 snapshot（免得把 0 覆盖进仓库里的模板快照）。')
+        print('  ' + str(snap.get('note', '')))
+        print('  确认要写空快照就加 --force。')
+        return 1
 
     os.makedirs(OUT_DATA, exist_ok=True)
     pj = os.path.join(OUT_DATA, 'snapshot.json')
@@ -486,4 +583,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

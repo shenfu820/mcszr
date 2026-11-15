@@ -27,6 +27,14 @@
   .body img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;}
   .body iframe{position:absolute;top:0;left:0;border:0;display:block;background:#000;
                transform-origin:top left;}
+  /* 没接上/没启动的屏：显式占位，不空白、也不拿假画面顶 */
+  .body .ph{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;gap:7px;
+            align-items:center;justify-content:center;text-align:center;padding:16px;
+            background:#0b0e12;color:#7f8c99;font-size:12px;line-height:1.7;}
+  .body .ph b{color:#c9d4dd;font-size:15px;letter-spacing:.5px;}
+  .body.off .ph,.cell.off .body .ph{display:flex;}
+  .live.off{color:#e06767;}
+  .live.off i{background:#e06767;}
   /* 点击放大：占满窗口（再点一次还原） */
   .cell.big{position:fixed;inset:8px;z-index:99;box-shadow:0 0 0 2px var(--amber),0 24px 60px rgba(0,0,0,.7);}
   /* 中间：小星 */
@@ -99,7 +107,9 @@
   <!-- ① 检测系统本体 -->
   <section class="cell" id="c1" data-zoom="1">
     <header><span class="dot" id="d1"></span><b>检测系统</b><span class="live" id="live1"><i></i>LIVE</span><span class="tag" id="t1">桌面端抓帧</span></header>
-    <div class="body"><img id="win" alt="桌面端实时抓帧"></div>
+    <div class="body" id="b1"><img id="win" alt="桌面端实时抓帧">
+      <div class="ph" id="ph1"><b>检测系统未连接</b>本机没跑 run.py 桌面端（或窗口被最小化）<br>
+        接产线机：config\paths.ini 里写 PROD_ROOT=，见 docs\跨机器部署.md「只部署屏幕」</div></div>
   </section>
 
   <!-- 中间：小星 -->
@@ -126,13 +136,17 @@
   <!-- ③ 六专家复核 -->
   <section class="cell" id="c3" data-zoom="1">
     <header><span class="dot" id="d3"></span><b>六专家复核</b><span class="live" id="live3"><i></i>LIVE</span><span class="tag">8999 本体</span></header>
-    <div class="body"><iframe id="f3" src="http://127.0.0.1:8999/" title="对话中枢" style="width:1600px;height:1000px"></iframe></div>
+    <div class="body"><iframe id="f3" title="对话中枢" style="width:1600px;height:1000px"></iframe>
+      <div class="ph" id="ph3"><b>对话中枢未连接</b>8999 没起（本机没装产线 / angent）<br>
+        远端：config\paths.ini 里写 AGENT_URL=http://产线机IP:8999</div></div>
   </section>
 
   <!-- ② 大屏 -->
   <section class="cell" id="c2" data-zoom="1">
     <header><span class="dot" id="d2"></span><b>大屏可视化</b><span class="live" id="live2"><i></i>LIVE</span><span class="tag">8770 本体</span></header>
-    <div class="body"><iframe id="f2" src="http://127.0.0.1:8770/" title="大屏" style="width:1920px;height:1080px"></iframe></div>
+    <div class="body"><iframe id="f2" title="大屏" style="width:1920px;height:1080px"></iframe>
+      <div class="ph" id="ph2"><b>大屏未连接</b>8770 没起（本机没装产线 / screen_service）<br>
+        远端：config\paths.ini 里写 SCREEN_URL=http://产线机IP:8770</div></div>
   </section>
 
   <!-- ④ 自学习闭环 -->
@@ -422,18 +436,22 @@ function beat(id, extra){
 }
 
 // ══════════ ① 桌面端实时抓帧
+// 地址来自 /api/stage 的 urls.desktop（同源走 8772 转发；直连 8790 也给了）；
+// 没接上就别每 500ms 打一次 404，留着占位文字。
 const PRE = new Image();
 let winT0 = performance.now();
+let WIN_URL = '';
 PRE.onload = () => {
   $('#win').src = PRE.src;
   winT0 = performance.now();
   beat('live1');
 };
+PRE.onerror = () => { const b = document.getElementById('b1'); if (b) b.classList.add('off'); };
 function tickWin(){
-  // 预加载下一帧再换，500ms 也不闪
-  PRE.src = 'http://127.0.0.1:8790/api/win/desktop.jpg?t=' + Date.now();
+  if (!WIN_URL) return;
+  PRE.src = WIN_URL + (WIN_URL.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
 }
-setInterval(tickWin, 500); tickWin();
+setInterval(tickWin, 500);
 setInterval(() => fitAll(false), 1000);
 
 // ══════════ ④ 自学习闭环（自绘，保证整块放得下）
@@ -488,6 +506,39 @@ function refreshLearned(){
   drawLearnChart();
 }
 
+// ══════════ ①②③ 三块「系统本体」屏：在线才嵌 iframe，不在线就显式占位
+function setPane(cellId, frameId, liveId, url, live){
+  const cell = document.getElementById(cellId), fr = document.getElementById(frameId);
+  const lv = document.getElementById(liveId);
+  const online = !!(live && live.online) && !!url;
+  if (online){
+    if (fr && fr.getAttribute('src') !== url) fr.src = url;
+    if (cell) cell.classList.remove('off');
+    if (lv) lv.classList.remove('off');
+    beat(liveId);
+  } else {
+    if (fr) fr.removeAttribute('src');
+    if (cell) cell.classList.add('off');
+    if (lv){ lv.classList.add('off'); lv.textContent = '未连接'; }
+  }
+  return online;
+}
+
+function applyLive(d){
+  const urls = (d && d.urls) || {}, live = (d && d.live) || {};
+  setPane('c2', 'f2', 'live2', urls.screen, live.screen);
+  setPane('c3', 'f3', 'live3', urls.agent, live.agent);
+  if (urls.desktop) WIN_URL = urls.desktop;
+  const desk = live.desktop || {};
+  const b1 = document.getElementById('b1');
+  if (b1) b1.classList.toggle('off', !desk.online);
+  if (desk.online) beat('live1');
+  else {
+    const l1 = document.getElementById('live1');
+    if (l1){ l1.classList.add('off'); l1.textContent = '未连接'; }
+  }
+}
+
 async function refreshStage(){
   let data = null;
   try {
@@ -496,10 +547,12 @@ async function refreshStage(){
   } catch(e){}
   if (!data && window.__STAGE_SNAPSHOT__) data = window.__STAGE_SNAPSHOT__;
   if (!data){ $('#learnCap').textContent = '8790 未启动，取不到自学习数据'; return; }
+  applyLive(data);
   LEARN_DATA = data.selflearn;
   $('#t4').textContent = '样本池 ' + (data.selflearn.samples ?? '—') + ' · 已跑 ' + ((data.selflearn.runs||[]).length) + ' 轮';
   ['d1','d2','d3','d4'].forEach(id => { const el = document.getElementById(id); if (el) el.className = 'dot'; });
   refreshLearned();
+  if (data.deployed === false && data.note) $('#learnCap').textContent = data.note;
   beat('live4', ' · ' + (data.generated_at ? data.generated_at.slice(11) : ''));
 }
 refreshStage(); setInterval(refreshStage, 2000);

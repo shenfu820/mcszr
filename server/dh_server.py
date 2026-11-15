@@ -397,6 +397,25 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/api/job":
             return self._json({"ok": True, "data": RUNNER.status()})
 
+        # ── 桌面端窗口抓帧：转发给 8790 舞台服务，页面就能用同源相对路径（换机器不用改地址）
+        if p.startswith("/api/win/"):
+            import urllib.request as _u
+            try:
+                with _u.urlopen("http://127.0.0.1:8790" + p, timeout=4) as r:
+                    body = r.read()
+                    ctype = r.headers.get("Content-Type", "image/jpeg")
+            except Exception as e:
+                return self._json({"code": 503,
+                                   "msg": f"8790 抓帧不可用（舞台服务没起，或本机没跑 run.py）：{type(e).__name__}: {e}"},
+                                  503)
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store, max-age=0")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         # ── 五块屏的数据源：8790 四屏舞台的实时聚合（转发，避免跨域）
         if p == "/api/stage":
             import urllib.request as _u
