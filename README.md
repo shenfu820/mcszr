@@ -18,6 +18,9 @@
 
 换电脑 / 换目录 / 换端口，**只看 `config\paths.ini` 一个文件**——脚本里已经没有写死的
 `E:\conda3\envs\voice`、`C:\Users\...\Desktop\...` 这类路径了。
+里面的绝对路径是「当前这台机器」的：换机器重跑 `一键部署_新电脑.bat` 会重写。
+ASCII 软链（`C:\dh_root` / `dh_prod` / `dh_ds`）不用手工建：
+`一键部署`、`启动数字人_语音版.bat`、`python _tools\dh_env.py --check` 都会自动建（junction，不需要管理员）。
 
 | 打开这个 | 是什么 |
 |---|---|

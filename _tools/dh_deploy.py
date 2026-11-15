@@ -9,7 +9,8 @@
   1. 检查基础解释器版本（>= 3.9）
   2. 在项目根建 .venv（已存在且可用就跳过）
   3. 装 requirements.txt（有 wheels/ 目录就离线装）
-  4. 探测语音识别 / GPU / 产线库 / 数据集，写回 config/paths.ini
+  4. 探测语音识别 / GPU / 产线库 / 数据集，写回 config/paths.ini，
+     并顺手把 C:\dh_root / C:\dh_prod / C:\dh_ds 三条 ASCII 软链建好（junction，不需要管理员）
   5. 跑一遍自检，打印体检表
 
     python _tools/dh_deploy.py --root <项目根> [--check] [--no-install] [--offline]
@@ -130,7 +131,7 @@ def main() -> int:
     cfg = dh_env.read_ini(cfg_path)
     env = dh_env.resolve(root, cfg)
     if a.check:
-        print("[plan] 会把探测到的路径写回 config/paths.ini（留空项才写）")
+        print("[plan] 会把探测到的路径写回 config/paths.ini（留空项才写），并建好 C:\\dh_root 等软链")
     else:
         vals = {"PORT": cfg.get("PORT") or "8772", "ASR_PORT": cfg.get("ASR_PORT") or "8773"}
         if not cfg.get("PYTHON") and env["DH_PY"]:
@@ -149,6 +150,10 @@ def main() -> int:
         print(f"[ok] 已写回 {cfg_path}")
         for k in dh_env.KEYS:
             print(f"     {k}={vals.get(k, cfg.get(k, '')) or '(自动探测)'}")
+        acts = dh_env.ensure_junctions(env)
+        changed = {k: v for k, v in acts.items() if v not in ("ok", "no-target")}
+        print("[ok] ASCII 软链 " + (" ".join(f"{k}:{v}" for k, v in changed.items())
+                                   if changed else "C:\\dh_root 等已就绪"))
 
     # 4) 自检
     print()

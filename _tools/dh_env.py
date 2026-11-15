@@ -5,13 +5,21 @@
 换电脑时唯一需要「知道的事」都由这个脚本现场探测出来，脚本里不再写死任何
 `E:\\conda3\\envs\\xxx` 或 `C:\\Users\\xxx\\Desktop\\...`。
 
-三种用法：
+用法：
     python _tools/dh_env.py --check                 人看的体检表（有 FAIL 退出码 1）
+    python _tools/dh_env.py --check --no-fix        同上，但只读：不建/不修 ASCII 软链
+    python _tools/dh_env.py --fix                   只建/修 ASCII 软链（C:\\dh_root 等），然后打表
     python _tools/dh_env.py --emit-bat out.cmd      给 .bat 用的 `set "K=V"` 批处理
     python _tools/dh_env.py --write-config          把探测到的路径写回 config/paths.ini
 
+关于 ASCII 软链：C:\\dh_root → 本项目，C:\\dh_prod → new mcjc，C:\\dh_ds → 数据集。
+`--check` 默认会顺手把缺/指错方向的软链建好（mklink /J，不需要管理员），
+所以新机器 clone 下来直接 `--check` 就能看到 OK；想只看不动用 `--no-fix`。
+
 配置文件 config/paths.ini 一律是 KEY=VALUE，值留空 = 自动探测。
 环境变量优先级最高：DH_PY / DH_ASR_PY / DH_GPU_PY / DH_PROD / DH_DS / DH_BROWSER。
+（本文件里写进去的绝对路径是「当前这台机器」的：换机器重跑 --write-config，
+  不要把它当成跨机器可用的默认值。）
 """
 from __future__ import annotations
 
@@ -304,6 +312,81 @@ def port_open(port: int, host: str = "127.0.0.1") -> bool:
         s.close()
 
 
+# ----------------------------------------------------------------- ASCII 软链
+# ultralytics 起子进程时中文路径会被代码页吃掉，所以固定用 C:\dh_root / dh_prod / dh_ds
+# 三个 junction 当中转。junction 不需要管理员（symlink 才需要），所以可以自动建。
+def _real(p) -> str:
+    try:
+        return os.path.normcase(os.path.realpath(str(p)))
+    except Exception:
+        return ""
+
+
+def _mklink(link: Path, target: Path) -> bool:
+    """建目录 junction/软链，成功与否都以「建完能不能访问」为准。"""
+    try:
+        link.parent.mkdir(parents=True, exist_ok=True)
+        if IS_WIN:
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                           capture_output=True, timeout=30)
+        else:
+            os.symlink(str(target), str(link), target_is_directory=True)
+    except Exception:
+        return False
+    return link.exists()
+
+
+def _rmdir_link(link: Path) -> bool:
+    """只删「链接本身」。真实目录里只要有东西就会失败，因此不会误删数据。"""
+    try:
+        if IS_WIN:
+            subprocess.run(["cmd", "/c", "rmdir", str(link)], capture_output=True, timeout=30)
+        else:
+            os.unlink(str(link))
+    except Exception:
+        return False
+    return not link.exists()
+
+
+def junction_targets(env: dict) -> list:
+    return [("dh_root", env["root"]), ("dh_prod", env["DH_PROD"]), ("dh_ds", env["DH_DS"])]
+
+
+def junction_state(env: dict) -> dict:
+    """ok | missing | no-target（没有可指的目标）| stale（指到了别的目录）"""
+    out = {}
+    for name, target in junction_targets(env):
+        link = Path("C:/" + name)
+        if not link.exists():
+            out[name] = "no-target" if not target else "missing"
+            continue
+        if not target:
+            out[name] = "ok"          # 已经在用了，目标未知也不动它
+            continue
+        out[name] = "ok" if _real(link) == _real(target) else "stale"
+    return out
+
+
+def ensure_junctions(env: dict, force: bool = True) -> dict:
+    """把缺的软链建起来、指错方向的改过来。返回 {名字: 动作}。"""
+    actions = {}
+    for name, target in junction_targets(env):
+        link = Path("C:/" + name)
+        state = junction_state(env)[name]
+        if state == "ok" or state == "no-target":
+            actions[name] = state
+            continue
+        if state == "stale":
+            if not force:
+                actions[name] = "stale"
+                continue
+            if not _rmdir_link(link):
+                actions[name] = "stale-keep（不是链接或删不掉，请手动处理）"
+                continue
+        actions[name] = "created" if _mklink(link, Path(target)) else "failed"
+    return actions
+
+
 # ----------------------------------------------------------------- 汇总
 def resolve(root: Path, cfg: dict) -> dict:
     env = {"root": str(root), "cfg_path": str(root / CONFIG_REL)}
@@ -354,17 +437,16 @@ def resolve(root: Path, cfg: dict) -> dict:
     env["DH_PROD_OK"] = "1" if prod_score >= 3 else "0"
     env["DH_DS"] = find_dataset_root(root, cfg)
     env["DH_DS_OK"] = "1" if env["DH_DS"] else "0"
+    # 只用来出提示：ini 里写了、但本机不存在的那两个值
+    env["CFG_PROD"] = cfg.get("PROD_ROOT") or ""
+    env["CFG_DS"] = cfg.get("DATASET_ROOT") or ""
     env["DH_BROWSER"] = find_browser(cfg)
     env["DH_BROWSER_OK"] = "1" if env["DH_BROWSER"] else "0"
 
     env["PORT_BUSY"] = "1" if port_open(int(env["PORT"])) else "0"
     env["ASR_PORT_BUSY"] = "1" if port_open(int(env["ASR_PORT"])) else "0"
 
-    junc = {}
-    for name, target in (("dh_root", str(root)), ("dh_prod", env["DH_PROD"]), ("dh_ds", env["DH_DS"])):
-        link = Path("C:/" + name)
-        junc[name] = ("ok" if link.exists() else ("missing" if target else "no-target"))
-    env["DH_JUNC"] = json.dumps(junc, ensure_ascii=False)
+    env["DH_JUNC"] = json.dumps(junction_state(env), ensure_ascii=False)
     return env
 
 
@@ -398,19 +480,35 @@ def rows(env: dict) -> list:
         r("OK", "产线库", env["DH_PROD"], "data/wood_inspect.db 在")
     elif env["DH_PROD"]:
         r("WARN", "产线库", env["DH_PROD"], "目录在但没找到 data/wood_inspect.db：查数类回答会说库不存在")
+    elif env.get("CFG_PROD"):
+        r("WARN", "产线库", "",
+          f"config/paths.ini 里的 PROD_ROOT={env['CFG_PROD']} 在这台机器上不存在（多半是别人机器的路径）："
+          f"改成这台机器的 new mcjc，或删空让它自动探测")
     else:
-        r("WARN", "产线库", "", "没找到 new mcjc 产线目录；在 config/paths.ini 里写 PROD_ROOT")
-    r("OK" if env["DH_DS_OK"] == "1" else "WARN", "数据集",
-      env["DH_DS"] or "",
-      "" if env["DH_DS_OK"] == "1" else "没有数据集：训练类作业会明确报「数据集软链不存在」")
+        r("WARN", "产线库", "", "没找到 new mcjc 产线目录；在 config/paths.ini 里写 PROD_ROOT=（指向 new mcjc 本身）")
+    if env["DH_DS_OK"] == "1":
+        r("OK", "数据集", env["DH_DS"], "")
+    elif env.get("CFG_DS"):
+        r("WARN", "数据集", "",
+          f"config/paths.ini 里的 DATASET_ROOT={env['CFG_DS']} 在这台机器上不存在："
+          f"改成这台机器的缺陷数据集根（含 images/train），或删空让它自动探测")
+    else:
+        r("WARN", "数据集", "", "没有数据集：训练类作业会明确报「数据集软链不存在」")
     r("OK" if env["DH_BROWSER_OK"] == "1" else "WARN", "浏览器",
       env["DH_BROWSER"] or "",
       "" if env["DH_BROWSER_OK"] == "1" else "没找到 Chrome/Edge：会用系统默认浏览器开地址")
     junc = json.loads(env["DH_JUNC"])
-    bad = [k for k, v in junc.items() if v == "missing" and k == "dh_root"]
-    r("FAIL" if bad else "OK", "ASCII 软链",
-      " ".join(f"{k}:{v}" for k, v in junc.items()),
-      "启动脚本会自动 mklink /J 建 dh_root；dh_prod/dh_ds 只在目标存在时建" if bad else "")
+    bad = {k: v for k, v in junc.items() if v not in ("ok", "no-target")}
+    if not bad:
+        junc_hint = ""
+    elif any(str(v).startswith(("failed", "stale-keep")) for v in bad.values()):
+        junc_hint = ("建不起来（可能被占用）：命令行手动跑 "
+                     r"mklink /J C:\dh_root \"<项目根>\"，或用 --fix 再试")
+    else:
+        junc_hint = ("还没建/指错方向：跑 python _tools\\dh_env.py --fix；"
+                     "双击 启动数字人_语音版.bat 或 一键部署_新电脑.bat 也会自动建（mklink /J，不需要管理员）")
+    r("OK" if not bad else "WARN", "ASCII 软链",
+      " ".join(f"{k}:{v}" for k, v in junc.items()), junc_hint)
     r("INFO", "端口", f"主服务 {env['PORT']} {'已在监听' if env['PORT_BUSY'] == '1' else '空闲'} ｜ "
                       f"语音 {env['ASR_PORT']} {'已在监听' if env['ASR_PORT_BUSY'] == '1' else '空闲'}")
     return out
@@ -463,6 +561,8 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--emit-bat", default="")
     ap.add_argument("--write-config", action="store_true")
+    ap.add_argument("--fix", action="store_true", help="只建/修 ASCII 软链（C:\\dh_root 等）")
+    ap.add_argument("--no-fix", action="store_true", help="只读：--check 也不建/不修软链")
     ap.add_argument("--strict", action="store_true", help="WARN 也算失败")
     a = ap.parse_args()
 
@@ -470,6 +570,14 @@ def main() -> int:
     cfg_path = root / CONFIG_REL
     cfg = read_ini(cfg_path)
     env = resolve(root, cfg)
+
+    # ASCII 软链：--check 默认顺手建好（junction 不需要管理员），--no-fix 才是纯只读
+    if a.fix or (a.check and not a.no_fix):
+        acts = ensure_junctions(env)
+        changed = {k: v for k, v in acts.items() if v not in ("ok", "no-target")}
+        if changed:
+            print("[软链] " + " ".join(f"{k}:{v}" for k, v in changed.items()), file=sys.stderr)
+            env = resolve(root, cfg)
 
     if a.json:
         print(json.dumps(env, ensure_ascii=False, indent=2))
