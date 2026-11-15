@@ -153,8 +153,17 @@ def stop_all(services: list) -> int:
 def build_services(env: dict) -> list:
     prod = env.get("DH_PROD") or ""
     angent = str((Path(prod).parent / "angent") if prod else "")
+    asr_port = int(env.get("ASR_PORT") or 8773)
     cn = lambda c: str(c) if c else ""             # noqa: E731
     return [
+        {
+            "key": "asr", "title": "语音识别", "port": asr_port,
+            "health": "http://127.0.0.1:%d/health" % asr_port, "expect": '"ready": true',
+            "script": str(ROOT / "server" / "asr_service.py"),
+            "cwd": str(ROOT), "py": "asr", "args": lambda p: ["--port", str(p)],
+            "optional": True, "wait": 150,
+            "hint": "没有装了 funasr 的环境：一键配置环境.bat --only asr（不给也能跑，只是不能说话）",
+        },
         {
             "key": "screen", "title": "② 大屏", "port": 8770,
             "health": "http://127.0.0.1:8770/api/health", "expect": "",
@@ -203,6 +212,8 @@ def build_services(env: dict) -> list:
 
 
 def pick_py(kind: str, env: dict) -> str:
+    if kind == "asr":
+        return env.get("DH_ASR_PY") or ""          # 没有就返回空 -> 上层跳过并给提示
     if kind == "gpu" and env.get("DH_GPU_PY"):
         return env["DH_GPU_PY"]
     return env.get("DH_PY") or sys.executable
@@ -260,6 +271,10 @@ def main() -> int:
 
         line = " %-12s %-6s %-8s" % (svc["title"], (str(port) if port else "-"),
                                      "已在跑" if state == "running" else "未启动")
+        if not py:
+            print(line + "  跳过 —— " + svc["hint"])
+            (warn if svc["optional"] else fail).append(svc["title"])
+            continue
         if a.check:
             if state == "running":
                 print(line + "  " + ("脚本在" if ok_script else "（脚本不在，但已经有进程在跑）"))
@@ -288,15 +303,16 @@ def main() -> int:
         started.append(svc)
 
         if svc["health"] and not a.no_wait:
+            wait_secs = svc.get("wait", 40)
             t0 = time.time()
-            while time.time() - t0 < 40:
+            while time.time() - t0 < wait_secs:
                 good, detail = http_ok(svc["health"], svc["expect"])
                 if good:
                     print("      就绪（%.1fs）%s" % (time.time() - t0, svc["health"]))
                     break
                 time.sleep(1.0)
             else:
-                print("      [警告] 40 秒没就绪：%s（看 logs\\all_%s.log）" % (detail, svc["key"]))
+                print("      [警告] %d 秒没就绪：%s（看 logs\\all_%s.log）" % (wait_secs, detail, svc["key"]))
                 warn.append(svc["title"] + "（健康检查超时）")
 
     if a.check:

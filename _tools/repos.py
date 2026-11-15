@@ -87,13 +87,15 @@ def _git(args, cwd: Path, timeout=20) -> tuple:
 
 
 def git_state(path: Path) -> dict:
-    st = {"is_repo": (path / ".git").exists(), "branch": "", "head": "", "dirty": None, "remotes": {}}
+    st = {"is_repo": (path / ".git").exists(), "branch": "", "head": "", "dirty": None,
+          "remotes": {}, "has_commit": False}
     if not st["is_repo"]:
         return st
-    _, branch, _ = _git(["rev-parse", "--abbrev-ref", "HEAD"], path)
-    st["branch"] = branch
-    _, head, _ = _git(["log", "--oneline", "-1"], path)
+    rc, branch, _ = _git(["rev-parse", "--abbrev-ref", "HEAD"], path)
+    st["branch"] = branch if rc == 0 else ""
+    rc, head, _ = _git(["log", "--oneline", "-1"], path)
     st["head"] = head
+    st["has_commit"] = rc == 0 and bool(head)
     rc, porc, _ = _git(["status", "--porcelain"], path)
     if rc == 0:
         st["dirty"] = len([ln for ln in porc.splitlines() if ln.strip()])
@@ -206,22 +208,30 @@ def do_init(root: Path, rows: list, key: str) -> int:
         print(f"[FAIL] 目录不存在：{path}")
         print("       先把项目放到这个位置（或改 config\\repos.ini 的 path=）再建仓库")
         return 2
-    if row["git_state"].get("is_repo"):
-        print(f"[skip] {key} 已经是 git 仓库：{path}")
+    if row["git_state"].get("is_repo") and row["git_state"].get("has_commit"):
+        print(f"[skip] {key} 已经是 git 仓库且有提交：{path}")
         return 0
     if row.get("git") != "local":
         print(f"[FAIL] {key} 的 git={row.get('git')}，只允许对 git=local 的条目建仓库")
         print("       （git=none 是 GB 级数据；git=yes 说明它自己有仓库，别在这里重复 init）")
         return 2
 
-    # .gitignore：ini 里用 | 分隔
+    # .gitignore：ini 里用 | 分隔。已有 .gitignore 就只**追加**缺的规则，绝不覆盖
+    # （Training 那种老仓库本来就有自己的忽略清单，覆盖会立刻把 7 GB 权重塞进仓库）。
     ign = [x.strip() for x in (row.get("ignore") or "").split("|") if x.strip()]
     gi = path / ".gitignore"
-    if ign and not gi.is_file():
-        gi.write_text("\n".join(ign) + "\n", encoding="utf-8", newline="")
-        print(f"[ok] 写 .gitignore（{len(ign)} 条忽略规则）")
-    elif ign:
-        print(f"[skip] 已有 .gitignore，不覆盖：{gi}")
+    if ign:
+        old = gi.read_text(encoding="utf-8", errors="replace").splitlines() if gi.is_file() else []
+        have = {ln.strip() for ln in old if ln.strip()}
+        add = [x for x in ign if x not in have]
+        if add:
+            if old and old[-1].strip():
+                old.append("")
+            old += ["# 由 _tools/repos.py --init-missing 补充（大数据文件不入库）"] + add
+            gi.write_text("\n".join(old) + "\n", encoding="utf-8", newline="")
+            print(f"[ok] .gitignore 追加 {len(add)} 条：{', '.join(add)}")
+        else:
+            print("[skip] .gitignore 已有全部规则")
 
     user = subprocess.run(["git", "config", "--global", "--get", "user.name"],
                           capture_output=True).stdout.decode("utf-8", "replace").strip()
@@ -233,14 +243,20 @@ def do_init(root: Path, rows: list, key: str) -> int:
         print('       git config --global user.email "you@example.com"')
         return 2
 
-    rc, _, err = _git(["init"], path)
+    rc, _, err = _git(["rev-parse", "--verify", "HEAD"], path)
+    if rc != 0:                                   # 还没提交过：init + 指定分支
+        rc_i, _, err_i = _git(["init"], path)
+        if rc_i != 0:
+            print(f"[FAIL] git init 失败：{err_i}")
+            return 2
+        _git(["symbolic-ref", "HEAD", "refs/heads/master"], path)     # 与其它仓库统一用 master
+    else:
+        print("[skip] 已经是仓库且已有提交")
+        return 0
+    # 文件多/体积大的工程（Training 8000+ 文件）要给它时间扫描
+    rc, out, err = _git(["add", "-A"], path, timeout=900)
     if rc != 0:
-        print(f"[FAIL] git init 失败：{err}")
-        return 2
-    _git(["symbolic-ref", "HEAD", "refs/heads/master"], path)     # 与其它仓库统一用 master
-    rc, out, err = _git(["add", "-A"], path)
-    if rc != 0:
-        print(f"[FAIL] git add 失败：{err}")
+        print(f"[FAIL] git add 失败：{err or out}")
         return 2
     msg = "chore: 首次入库（代码与配置；数据库/日志/截图按 .gitignore 排除）"
     rc, out, err = _git(["commit", "-m", msg], path)
@@ -284,6 +300,88 @@ def do_clone(root: Path, rows: list, key: str, yes: bool) -> int:
     if big:
         print("     注意：仓库里通常没有权重/检测库/数据集，按 docs\\仓库与依赖清单.md 补齐")
     return 0
+
+
+def do_pull(root: Path, rows: list, key: str, all_: bool) -> int:
+    """按登记表把每个仓库拉一遍（只用 --ff-only，绝不产生合并提交）。"""
+    targets = rows if all_ else [r for r in rows if r["key"] == key]
+    if not targets:
+        print(f"[FAIL] 登记表里没有 {key}（可选：{', '.join(r['key'] for r in rows)}）")
+        return 2
+    print("=" * 88)
+    print("拉取所有系统的仓库" + ("（全部）" if all_ else f"（{key}）"))
+    print("=" * 88)
+    rc = 0
+    for r in targets:
+        name = r.get("name", r["key"])
+        if not r["exists"]:
+            print(f"[skip] {name}：这台机器上没有（{r['path_resolved']}）")
+            continue
+        g = r["git_state"]
+        if not g.get("is_repo"):
+            if in_tree(root, Path(r["path_resolved"])):
+                print(f"[skip] {name}：随本仓库（子目录），已经跟着主仓库一起拉过了")
+            elif r.get("git") == "none":
+                print(f"[skip] {name}：登记为不建仓库（数据/大件），只登记路径")
+            else:
+                print(f"[skip] {name}：还没有 git 仓库 —— python _tools\\repos.py --init {r['key']}")
+            continue
+        remotes = g.get("remotes") or {}
+        if not remotes:
+            print(f"[skip] {name}：本地仓库，没有远端（要在多台机器之间同步就先 "
+                  f"git remote add origin <地址>；本机自用不用管）")
+            continue
+        if g.get("dirty"):
+            print(f"[warn] {name}：有 {g['dirty']} 处未提交改动，先提交/暂存再拉，跳过")
+            rc = max(rc, 1)
+            continue
+        branch = g.get("branch") or "master"
+        before = (g.get("head") or "")[:8]
+        for rname in remotes:
+            rcode, out, err = _git(["pull", "--ff-only", rname, branch],
+                                   Path(r["path_resolved"]), timeout=180)
+            txt = (out + " " + err).strip().splitlines()
+            tail = txt[-1] if txt else ""
+            if rcode != 0:
+                low = (out + err).lower()
+                if "not possible to fast-forward" in low or "diverg" in low or "ahead" in low:
+                    print(f"[warn] {name} ← {rname}：本地有未推送的提交，不能快进（先 push 或手工 rebase）")
+                else:
+                    print(f"[warn] {name} ← {rname}：拉取失败（{tail[:90]}）")
+                rc = max(rc, 1)
+            else:
+                print(f"[ok]   {name} ← {rname}：{tail[:90]}")
+        after_state = git_state(Path(r["path_resolved"]))
+        after = (after_state.get("head") or "")[:8]
+        if before and after and before != after:
+            print(f"       HEAD {before} → {after}")
+    print("-" * 88)
+    print("注意：只有 fast-forward 才会动工作区；有本地改动或分叉的仓库会被跳过并报出来。")
+    return rc
+
+
+def do_init_missing(root: Path, rows: list, yes: bool) -> int:
+    """把登记为 git=local 但还没有仓库的工程，批量建成本地仓库。"""
+    todo = [r for r in rows if r.get("git") == "local" and r["exists"]
+            and (not r["git_state"].get("is_repo") or not r["git_state"].get("has_commit"))]
+    print("=" * 88)
+    print("补建缺失的仓库（只处理 config\\repos.ini 里 git=local 的条目）")
+    print("=" * 88)
+    if not todo:
+        print("[ok] 没有需要补建的：登记为 git=local 的工程都已经是仓库了")
+        return 0
+    for r in todo:
+        print(f"[待建] {r['key']:9} {r.get('name', '')}  {r['path_resolved']}")
+        print(f"       忽略规则：{r.get('ignore') or '（无）'}")
+    if not yes:
+        print("-" * 88)
+        print("这只是预览。确认要建就加 --yes：python _tools\\repos.py --init-missing --yes")
+        return 0
+    rc = 0
+    for r in todo:
+        print("-" * 88)
+        rc = max(rc, do_init(root, rows, r["key"]))
+    return rc
 
 
 def write_manifest(root: Path, rows: list) -> int:
@@ -410,6 +508,8 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--init", default="", metavar="KEY")
+    ap.add_argument("--init-missing", action="store_true", help="把 git=local 但还没有仓库的工程补建出来")
+    ap.add_argument("--pull", default="", metavar="KEY|all", help="拉取（fast-forward）")
     ap.add_argument("--clone", default="", metavar="KEY")
     ap.add_argument("--yes", action="store_true", help="克隆大仓库时确认")
     ap.add_argument("--manifest", action="store_true")
@@ -423,6 +523,14 @@ def main() -> int:
     did = False
     if a.init:
         rc = do_init(root, rows, a.init)
+        did = True
+        rows = collect(root)
+    if a.init_missing:
+        rc = max(rc, do_init_missing(root, rows, a.yes))
+        did = True
+        rows = collect(root)
+    if a.pull:
+        rc = max(rc, do_pull(root, rows, a.pull, all_=a.pull.strip().lower() == "all"))
         did = True
         rows = collect(root)
     if a.clone:

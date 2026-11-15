@@ -1,4 +1,4 @@
-# ── 运行环境（不进仓库）
+﻿# ── 运行环境（不进仓库）
 .venv/
 .venv-*/
 venv/
@@ -24,6 +24,7 @@ _tools/*
 !_tools/bat_lint.py
 !_tools/dh_findpy.cmd
 !_tools/repos.py
+!_tools/discover.py
 # 产线工程本地副本（45GB 级，见 vendor/README.md：只 tracked 说明文件）
 vendor/*
 !vendor/README.md
