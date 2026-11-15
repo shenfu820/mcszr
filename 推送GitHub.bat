@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 set KEY=%USERPROFILE%\.ssh\id_ed25519_mcszr

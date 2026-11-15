@@ -1,0 +1,12 @@
+# 语音识别环境用（装在独立的 Python 3.11 环境里，不是项目 .venv）
+# 装法：
+#   py -3.11 -m venv D:\envs\voice
+#   D:\envs\voice\Scripts\python.exe -m pip install -r requirements-asr.txt
+# 装完把这个 python.exe 写进 config\paths.ini 的 ASR_PYTHON=，或设环境变量 DH_ASR_PY
+funasr>=1.4.0
+modelscope
+torchaudio
+soundfile
+scipy
+librosa
+numpy

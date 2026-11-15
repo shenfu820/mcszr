@@ -57,7 +57,12 @@ class Progress:
 
 
 CLASSES = ["dry_knot", "sound_knot", "edge_knot", "small_knot", "split", "wave"]
-DS_ROOT = "C:/dh_ds"   # ASCII 软链 -> F:\木材缺陷数据集6类3000+（绕开中文路径）
+
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dh_paths  # noqa: E402  跨机器路径：环境变量 > config/paths.ini > 自动探测
+
+DS_ROOT = dh_paths.ds_root()   # ASCII 软链优先 -> 数据集（绕开中文路径）
 
 TEMPLATE = """# 由数字人 GPU worker 自动生成，勿手改
 path: {root}
@@ -76,7 +81,9 @@ def make_data_yaml(workdir: Path) -> str:
     Windows 命令行编码互相踩脚。
     """
     if not Path(DS_ROOT).exists():
-        raise FileNotFoundError(f"数据集软链不存在：{DS_ROOT}（应指向 F:\\木材缺陷数据集6类3000+）")
+        raise FileNotFoundError(
+            f"数据集根不存在：{DS_ROOT}（在 config/paths.ini 里写 DATASET_ROOT=数据集目录，"
+            f"或设环境变量 DH_DS；启动脚本会自动建 C:\\dh_ds 软链）")
     p = workdir / "data.yaml"
     p.write_text(TEMPLATE.format(root=DS_ROOT, nc=len(CLASSES), names=CLASSES), encoding="utf-8")
     return p.as_posix()
@@ -86,9 +93,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", default="train", choices=["train", "eval", "infer"])
     ap.add_argument("--workdir", required=True)
-    ap.add_argument("--data", default="", help="留空则用 C:/dh_ds 自动生成 data.yaml")
-    ap.add_argument("--weights", default=r"C:/dh_prod/models/yolo26m.pt")
-    ap.add_argument("--source", default="C:/dh_prod/data/real_boards/images", help="infer 模式的图片目录")
+    ap.add_argument("--data", default="", help="留空则按数据集根自动生成 data.yaml")
+    ap.add_argument("--weights", default=dh_paths.prod_weights())
+    ap.add_argument("--source", default=dh_paths.infer_src(), help="infer 模式的图片目录")
     ap.add_argument("--epochs", type=int, default=2)
     ap.add_argument("--imgsz", type=int, default=320)
     ap.add_argument("--batch", type=int, default=8)

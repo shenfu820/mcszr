@@ -29,13 +29,18 @@ _RUNTIME = Path("C:/dh_root")                            # ASCII 软链 -> 数�
 ROOT = _RUNTIME if _RUNTIME.exists() else Path(__file__).resolve().parent.parent
 JOBS_DIR = ROOT / "ops_jobs"
 WORKER = ROOT / "server" / "gpu_worker.py"
-YOLOCES_PY = Path(r"E:\conda3\envs\yoloces\python.exe")  # 带 CUDA 的环境
+
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dh_paths  # noqa: E402  跨机器路径：环境变量 > config/paths.ini > 自动探测
+
+YOLOCES_PY = Path(dh_paths.gpu_python())                 # 带 CUDA 的环境，不再写死
 
 # 这三个必须全 ASCII：Windows 命令行传中文参数会被 PowerShell/cmd 的代码页吃掉，
 # 之前踩过——worker 收到的是 "F:\鏈ㄦ潗..."，数据集直接找不到。
-DATA_YAML = ""                                           # 留空：worker 自己生成 C:/dh_ds 的 data.yaml
-PROD_WEIGHTS = "C:/dh_prod/models/yolo26m.pt"            # 只读引用，绝不写回
-INFER_SRC = "C:/dh_prod/data/real_boards/images"
+DATA_YAML = ""                                           # 留空：worker 自己生成 data.yaml
+PROD_WEIGHTS = dh_paths.prod_weights()                   # 只读引用，绝不写回
+INFER_SRC = dh_paths.infer_src()
 
 MODES = {
     "train": {"label": "微调训练", "epochs": 2, "imgsz": 320, "batch": 8, "fraction": 0.12},
