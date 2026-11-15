@@ -144,6 +144,68 @@ def have_nvidia() -> bool:
     return out.upper().startswith("GPU")
 
 
+def driver_cuda() -> tuple:
+    """读驱动支持的 CUDA 版本。
+
+    新版 nvidia-smi 头部写的是 `CUDA UMD Version: 13.4`，老版写 `CUDA Version: 12.4`，
+    两种都要认（实测本机 617.42 驱动 = CUDA UMD 13.4）。
+    """
+    out = sh_out(["nvidia-smi"], timeout=25)
+    for pat in (r"CUDA UMD Version:\s*(\d+)\.(\d+)", r"CUDA Version:\s*(\d+)\.(\d+)"):
+        m = re.search(pat, out, re.I)
+        if m:
+            return int(m.group(1)), int(m.group(2))
+    return ()
+
+
+def pick_torch_index() -> tuple:
+    """按驱动支持的 CUDA 版本挑 pytorch 的 index。返回 (index_url, 说明)。
+
+    顺序是"取驱动能吃下的最高一档"，各档里 torch 的最高版本（2026-11-15 实测）：
+        cu130 → 2.14.1+cu130   cu126 → 2.14.1+cu126   cu124 → 2.6.0+cu124
+        cu121 → 2.5.1+cu121    cu118 → 2.7.1+cu118
+    """
+    base = "https://download.pytorch.org/whl/"
+    if not have_nvidia():
+        return base + "cpu", "没有 NVIDIA 卡，装 CPU 版"
+    cu = driver_cuda()
+    table = [((13, 0), "cu130"), ((12, 6), "cu126"), ((12, 4), "cu124"),
+             ((12, 1), "cu121"), ((11, 8), "cu118")]
+    if not cu:
+        return base + "cu126", "读不到驱动 CUDA 版本，用最通用的一档 cu126"
+    for need, name in table:
+        if cu >= need:
+            return base + name, f"驱动支持 CUDA {cu[0]}.{cu[1]} → {name}"
+    return base + "cu118", f"驱动只支持 CUDA {cu[0]}.{cu[1]}，退到 cu118"
+
+
+def index_versions(py: Path, pkg: str, index_url: str) -> str:
+    """问一下某个 index 里这个包的最高版本（不下载，只读索引）。"""
+    out = sh_out([py, "-m", "pip", "index", "versions", pkg, "--index-url", index_url], timeout=120)
+    m = re.search(r"Available versions:\s*(.+)", out)
+    if not m:
+        return ""
+    vers = [v.strip() for v in m.group(1).split(",") if v.strip()]
+    return vers[0] if vers else ""
+
+
+def cuda_torch_state(py: Path) -> tuple:
+    """返回 (是否是 CUDA 版, torch 版本, torch.version.cuda)。"""
+    try:
+        p = subprocess.run([str(py), "-c",
+                            "import torch;print(torch.__version__, torch.version.cuda)"],
+                           capture_output=True, timeout=180)
+    except Exception as e:                       # noqa: BLE001
+        return False, f"{type(e).__name__}", ""
+    out = p.stdout.decode("utf-8", "replace").strip().splitlines()
+    if p.returncode != 0 or not out:
+        return False, "", ""
+    parts = out[-1].split()
+    ver = parts[0] if parts else ""
+    cu = parts[1] if len(parts) > 1 else "None"
+    return (cu not in ("None", "", "undefined")), ver, cu
+
+
 def import_ok(py: Path, module: str) -> tuple:
     """只看 stdout：funasr 之类 import 时会往 stderr 打 warning，混在一起会误判。"""
     try:
@@ -239,12 +301,26 @@ def ensure_env(root: Path, cfg: dict, key: str, base: Path, *, check_only: bool,
 
     # ③ 建 venv
     log = root / LOG_DIR / "bootstrap" / f"{key}-{time.strftime('%Y%m%d_%H%M%S')}.log"
-    if target_py.is_file() and force:
-        print(f"[{key}] --force：删掉重建 {target_py.parent.parent}")
-        shutil.rmtree(target_py.parent.parent, ignore_errors=True)
+    venv_dir = target_py.parent.parent
+    if force and venv_dir.exists():
+        print(f"[{key}] --force：重建 {venv_dir}")
+        try:
+            shutil.rmtree(venv_dir)
+        except Exception as e:                   # noqa: BLE001
+            # 常见于"解释器还在跑"或杀软占用：直接删会失败，那就改名让位，
+            # 绝不能像以前那样 ignore_errors=True 然后拿一个残缺 venv 去 pip
+            # （会报 "No pyvenv.cfg file"）。
+            bak = venv_dir.with_name(venv_dir.name + ".old-" + time.strftime("%H%M%S"))
+            try:
+                venv_dir.rename(bak)
+                print(f"[{key}] 删不掉（{type(e).__name__}，多半是还有进程在用），改名让位：{bak.name}")
+            except Exception as e2:              # noqa: BLE001
+                res.update(status="失败", detail=f"旧环境删不掉也改不了名：{e2}")
+                print(f"[{key}] [FAIL] {venv_dir} 删不掉，先关掉用它的程序再重跑")
+                return res
     if not target_py.is_file():
-        print(f"[{key}] 建虚拟环境 {target_py.parent.parent}")
-        rc = run_stream([base, "-m", "venv", target_py.parent.parent], log, verbose)
+        print(f"[{key}] 建虚拟环境 {venv_dir}")
+        rc = run_stream([base, "-m", "venv", venv_dir], log, verbose)
         if rc != 0 or not target_py.is_file():
             res.update(status="失败", detail=f"建 venv 失败 rc={rc}，日志 {log}")
             print(f"[{key}] [FAIL] 建 venv 失败，见 {log}")
@@ -265,18 +341,43 @@ def ensure_env(root: Path, cfg: dict, key: str, base: Path, *, check_only: bool,
         src += ["-i", index_url]                      # 弱网/国内机器用镜像，例：清华 tuna
 
     if key == "gpu":
-        # torch 先按是否有 NVIDIA 卡选 index（ultralytics 会依赖它，先装省一次解析）
+        # torch 先按"驱动支持的 CUDA 版本"挑源，单独装（ultralytics 会依赖它）
         if not dh_env.has_pkg(target_py, "torch"):
-            idx = torch_index or ("https://download.pytorch.org/whl/cu124" if have_nvidia()
-                                  else "https://download.pytorch.org/whl/cpu")
-            torch_src = [] if offline_now else ["--index-url", idx]
-            print(f"[{key}] 先装 torch（{'CUDA' if 'cu' in idx else 'CPU'} 版，源 {idx}）")
-            rc = run_stream([target_py, "-m", "pip", "install", "torch", "torchvision", *common, *torch_src],
-                            log, verbose)
-            if rc != 0:
-                res.update(status="失败", detail=f"torch 装不上 rc={rc}，日志 {log}")
-                print(f"[{key}] [FAIL] torch 没装上，见 {log}")
-                return res
+            if torch_index:
+                idx, why = torch_index, "--torch-index 指定"
+            else:
+                idx, why = pick_torch_index()
+            print(f"[{key}] 装 torch（{why}）")
+
+            if offline_now:
+                rc = run_stream([target_py, "-m", "pip", "install", "torch", *common, *src], log, verbose)
+                if rc != 0:
+                    res.update(status="失败", detail=f"torch 装不上 rc={rc}，日志 {log}")
+                    print(f"[{key}] [FAIL] torch 没装上，见 {log}")
+                    return res
+            else:
+                pypi = index_url or "https://pypi.org/simple"
+                # 分两步，绕开两个坑：
+                #  坑1 只用 --index-url(cuXXX) → torch 的构建/运行依赖（flit_core、typing_extensions…）
+                #      在 cu 源里没有，报 "Could not find a version that satisfies flit_core<4,>=3.11"
+                #  坑2 两个源一起用 → PyPI 上的 torch 版本号更高（2.14.1 对 cu124 源的 2.6.0），
+                #      pip 按最高版本选，有显卡的机器反而装成 CPU 版
+                # 所以：第一步只从 cu 源拿 wheel 本体（--no-deps，不解析依赖）；
+                #      第二步以 PyPI/镜像为主源补齐依赖（torch 已满足，不会被替换）。
+                for pkg in ("torch", "torchvision"):
+                    rc = run_stream([target_py, "-m", "pip", "install", pkg, "--no-deps",
+                                     *common, "--index-url", idx], log, verbose)
+                    if rc != 0:
+                        if pkg == "torch":
+                            res.update(status="失败", detail=f"torch 装不上 rc={rc}，日志 {log}")
+                            print(f"[{key}] [FAIL] torch 没装上，见 {log}")
+                            return res
+                        print(f"[{key}] [WARN] torchvision 没装上（ultralytics 那步会再试）")
+                # 补齐 torch / torchvision 的依赖
+                rc = run_stream([target_py, "-m", "pip", "install", "torch", "torchvision",
+                                 *common, "--index-url", pypi, "--extra-index-url", idx], log, verbose)
+                if rc != 0:
+                    print(f"[{key}] [WARN] torch 的依赖没补齐（rc={rc}），后面的 import 校验会说话")
     print(f"[{key}] pip install -r {req.name}{'（离线）' if offline_now else ''}")
     rc = run_stream([target_py, "-m", "pip", "install", "-r", req, *common, *src], log, verbose)
     if rc != 0:
@@ -295,6 +396,13 @@ def ensure_env(root: Path, cfg: dict, key: str, base: Path, *, check_only: bool,
             missing.append(mod)
         else:
             vers[mod] = ver
+    if key == "gpu":
+        ok_cu, tver, tcu = cuda_torch_state(target_py)
+        if have_nvidia() and not ok_cu:
+            print(f"[{key}] [WARN] 这台机器有 NVIDIA 卡，但装到的是 CPU 版 torch（{tver}）")
+            print(f"        要 CUDA 版：一键配置环境.bat --force --only gpu "
+                  f"--torch-index https://download.pytorch.org/whl/cu126（按自己驱动的 CUDA 版本挑）")
+        vers["torch"] = f"{tver or vers.get('torch', '')} cuda={tcu or 'none'}"
     if missing:
         res.update(status="失败", detail=f"import 校验失败：{', '.join(missing)}；日志 {log}")
         print(f"[{key}] [FAIL] 装完但 import 不过：{', '.join(missing)}")
