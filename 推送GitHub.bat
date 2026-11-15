@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+rem ── 行尾：本文件由 .gitattributes 保证 CRLF（cmd 只认 CRLF；若被存成 LF，跑 python _tools\bat_lint.py --fix）
 cd /d "%~dp0"
 set KEY=%USERPROFILE%\.ssh\id_ed25519_mcszr
 echo [1/2] 测试 SSH(443) 通道...

@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+rem ── 行尾：本文件由 .gitattributes 保证 CRLF（cmd 只认 CRLF；若被存成 LF，跑 python _tools\bat_lint.py --fix）
 title 停止四屏舞台服务
 set "PORT=8790"
 echo 查找占用 %PORT% 的进程 ...

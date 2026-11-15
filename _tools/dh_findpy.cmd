@@ -1,4 +1,5 @@
 @echo off
+rem EOL: kept CRLF by .gitattributes (cmd needs CRLF; if broken run: python _tools\bat_lint.py --fix
 rem ============================================================
 rem  Find a usable Python (shared by launch / deploy / voice bats)
 rem  Caller must set "ROOT=<project root>" first.
